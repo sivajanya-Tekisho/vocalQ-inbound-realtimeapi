@@ -17,6 +17,7 @@ const Overview: React.FC = () => {
   ]);
   const [intentDistribution, setIntentDistribution] = React.useState<any[]>([]);
   const [hourWiseCalls, setHourWiseCalls] = React.useState<any[]>([]);
+  const [peakWindow, setPeakWindow] = React.useState<string>('N/A');
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -38,6 +39,7 @@ const Overview: React.FC = () => {
 
         // Transform for Peak Window
         setHourWiseCalls(data.calls_by_hour);
+        setPeakWindow(data.peak_window || 'N/A');
 
       } catch (error) {
         console.error("Failed to load analytics", error);
@@ -62,7 +64,10 @@ const Overview: React.FC = () => {
         <div className="mt-6">
           <div className="glass p-5 rounded-2xl border-white/5 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 blur-[80px] pointer-events-none"></div>
-            <h3 className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-5">Peak Window</h3>
+            <div className="flex justify-between items-center mb-5">
+              <h3 className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em]">Peak Window</h3>
+              <span className="text-sm font-semibold text-cyan-400">{peakWindow}</span>
+            </div>
             <div className="h-[200px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={hourWiseCalls}>

@@ -21,10 +21,6 @@ class Settings(BaseSettings):
     QDRANT_URL: str = os.getenv("QDRANT_URL", "")
     QDRANT_API_KEY: str = os.getenv("QDRANT_API_KEY", "")
 
-    # Voice Settings
-    WHISPER_MODEL: str = os.getenv("WHISPER_MODEL", "base")
-    VAD_AGGRESSIVENESS: int = int(os.getenv("VAD_AGGRESSIVENESS", "3"))
-
     model_config = {
         "case_sensitive": True,
         "env_file": ".env",

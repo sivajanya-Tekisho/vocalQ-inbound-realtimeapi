@@ -12,7 +12,6 @@ import PyPDF2
 from docx import Document as DocxDocument
 import re
 
-from app.services.llm_service import LLMService
 from app.services.qdrant_service import QdrantService
 from app.services.audio_service import AudioService
 
@@ -22,7 +21,6 @@ class DocumentIngestionService:
     """Service for ingesting documents into the RAG knowledge base."""
     
     def __init__(self):
-        self.llm_service = LLMService()
         self.qdrant_service = QdrantService()
         self.chunk_size = 1000  # characters per chunk
         self.chunk_overlap = 200  # overlap between chunks
@@ -275,9 +273,12 @@ class DocumentIngestionService:
             }
     
     def list_documents(self) -> List[Dict]:
-        """List all ingested documents."""
+        """List all ingested documents from local folder and Qdrant."""
         documents = []
+        seen_doc_ids = set()
+        
         try:
+            # First, check local knowledge base folder
             if self.knowledge_base_dir.exists():
                 for doc_dir in self.knowledge_base_dir.iterdir():
                     if doc_dir.is_dir():
@@ -286,9 +287,74 @@ class DocumentIngestionService:
                             documents.append({
                                 "doc_id": doc_dir.name,
                                 "files": [f.name for f in files],
-                                "file_count": len(files)
+                                "file_count": len(files),
+                                "source": "local"
                             })
+                            seen_doc_ids.add(doc_dir.name)
+            
+            # Also check Qdrant for any documents not in local folder
+            # Use synchronous approach for listing
+            import asyncio
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    # We're in an async context, use a new approach
+                    import concurrent.futures
+                    with concurrent.futures.ThreadPoolExecutor() as executor:
+                        future = executor.submit(self._list_from_qdrant_sync)
+                        qdrant_docs = future.result(timeout=5)
+                else:
+                    qdrant_docs = loop.run_until_complete(self._list_from_qdrant())
+            except RuntimeError:
+                # No event loop, create one
+                qdrant_docs = asyncio.run(self._list_from_qdrant())
+            
+            # Add Qdrant documents not seen locally
+            for doc in qdrant_docs:
+                if doc["doc_id"] not in seen_doc_ids:
+                    documents.append(doc)
+                    seen_doc_ids.add(doc["doc_id"])
+            
             return documents
         except Exception as e:
             logger.error(f"Error listing documents: {str(e)}")
+            return documents  # Return what we have
+    
+    async def _list_from_qdrant(self) -> List[Dict]:
+        """Fetch document list from Qdrant."""
+        try:
+            points = await self.qdrant_service.list_documents()
+            
+            # Group by doc_id
+            doc_map = {}
+            for point in points:
+                metadata = point.get("metadata", {})
+                if isinstance(metadata, dict):
+                    doc_id = metadata.get("doc_id") or metadata.get("metadata", {}).get("doc_id")
+                    source = metadata.get("source") or metadata.get("metadata", {}).get("source") or "unknown"
+                else:
+                    doc_id = None
+                    source = "unknown"
+                
+                if doc_id:
+                    if doc_id not in doc_map:
+                        doc_map[doc_id] = {
+                            "doc_id": doc_id,
+                            "files": [source] if source != "unknown" else [],
+                            "file_count": 1,
+                            "source": "qdrant"
+                        }
+                    else:
+                        doc_map[doc_id]["file_count"] += 1
+                        if source not in doc_map[doc_id]["files"] and source != "unknown":
+                            doc_map[doc_id]["files"].append(source)
+            
+            return list(doc_map.values())
+        except Exception as e:
+            logger.error(f"Error listing from Qdrant: {e}")
             return []
+    
+    def _list_from_qdrant_sync(self) -> List[Dict]:
+        """Synchronous wrapper for listing from Qdrant."""
+        import asyncio
+        return asyncio.run(self._list_from_qdrant())

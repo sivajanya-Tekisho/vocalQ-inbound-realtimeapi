@@ -34,6 +34,3 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 def read_root():
     return {"message": "Inbound Voice Assistant Backend is Running!"}
 
-@app.get("/")
-def root():
-    return {"message": "Welcome to Inbound Voice Assistant API"}

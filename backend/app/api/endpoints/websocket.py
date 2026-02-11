@@ -1,100 +1,71 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from app.services.orchestrator import ConversationOrchestrator
-import logging
+"""
+WebSocket endpoint for Twilio Media Streams.
+Handles inbound voice calls via OpenAI Realtime API.
+"""
 import json
 import asyncio
+import logging
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+
+from app.services.realtime_orchestrator import RealtimeOrchestrator
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-import sys
 
 @router.websocket("/stream")
 async def websocket_endpoint(websocket: WebSocket):
-    logger.info("\n[TELEPHONY] --- NEW INBOUND WEBSOCKET CONNECTION ---")
-    sys.stdout.flush()
+    """Handle Twilio Media Stream WebSocket connection."""
+    logger.info("[WS] New inbound connection")
     await websocket.accept()
-    logger.info("[TELEPHONY] --- CONNECTION ACCEPTED ---")
-    sys.stdout.flush()
     
     orchestrator = None
     
     try:
-        orchestrator = ConversationOrchestrator(None, websocket)
-        logger.info("WebSocket connection accepted")
+        orchestrator = RealtimeOrchestrator(None, websocket)
     except Exception as e:
-        logger.error(f"Failed to initialize orchestrator: {e}")
-        logger.error(f"--- ERROR: Failed to initialize orchestrator: {e} ---")
-        sys.stdout.flush()
-        import traceback
-        traceback.print_exc()
+        logger.error(f"[WS] Failed to initialize orchestrator: {e}", exc_info=True)
         await websocket.close()
         return
     
     try:
-        try:
-            while True:
-                # Twilio sends JSON messages
-                message = await websocket.receive_text()
-                data = json.loads(message)
-                event = data.get("event")
+        while True:
+            message = await websocket.receive_text()
+            data = json.loads(message)
+            event = data.get("event")
+            
+            if event == "connected":
+                logger.info("[WS] Twilio connected")
                 
-                if event == "connected":
-                    logger.info("Twilio connected")
-                    logger.info("--- Twilio Connected ---")
-                    sys.stdout.flush()
-                    
-                elif event == "start":
-                    start_data = data.get("start", {})
-                    stream_sid = start_data.get("streamSid")
-                    # Caller data is passed via custom parameters in the Twilio webhook TwiML
-                    custom_params = start_data.get("customParameters", {})
-                    caller_number = custom_params.get("callerNumber") or start_data.get("from") or "Unknown"
-                    
-                    logger.info(f"Stream started: {stream_sid}, Caller: {caller_number}")
-                    logger.info(f"--- Stream started: {stream_sid}, Caller: {caller_number} ---")
-                    sys.stdout.flush()
-                    
-                    if orchestrator:
-                        orchestrator.stream_sid = stream_sid
-                        orchestrator.caller_number = caller_number
-                        
-                        # Start orchestrator in background so it doesn't block receiving media
-                        asyncio.create_task(orchestrator.start())
-                        logger.info(f"--- Orchestrator Start Task Created for Stream: {stream_sid} ---")
-                        sys.stdout.flush()
-                    
-                elif event == "media":
-                    # Payload is base64 encoded audio (8k mulaw usually)
-                    payload = data.get("media", {}).get("payload")
-                    if payload and orchestrator:
-                        await orchestrator.process_media(payload)
-                        
-                elif event == "stop":
-                    logger.info("Stream stopped message received")
-                    logger.info("--- Stream Stopped ---")
-                    sys.stdout.flush()
-                    break
-                    
-                elif event == "dtmf":
-                    pass
-        finally:
-            # Ensure cleanup happens even if the loop breaks or errors
-            if orchestrator:
-                logger.info(f"[TELEPHONY] Triggering manual disconnect cleanup for {orchestrator.call_id}")
-                await orchestrator.handle_disconnect()
+            elif event == "start":
+                start_data = data.get("start", {})
+                stream_sid = start_data.get("streamSid")
+                custom_params = start_data.get("customParameters", {})
+                caller_number = custom_params.get("callerNumber") or start_data.get("from") or "Unknown"
                 
+                logger.info(f"[WS] Stream started: {stream_sid}, Caller: {caller_number}")
+                
+                if orchestrator:
+                    orchestrator.stream_sid = stream_sid
+                    orchestrator.caller_number = caller_number
+                    asyncio.create_task(orchestrator.start())
+                
+            elif event == "media":
+                payload = data.get("media", {}).get("payload")
+                if payload and orchestrator:
+                    await orchestrator.process_media(payload)
+                    
+            elif event == "stop":
+                logger.info("[WS] Stream stopped")
+                break
+
     except WebSocketDisconnect:
-        logger.info("WebSocket disconnected")
-        logger.info("--- WebSocket Disconnected ---")
-        sys.stdout.flush()
+        logger.info("[WS] Disconnected")
     except Exception as e:
-        logger.error(f"WebSocket error: {e}")
-        logger.error(f"--- ERROR: WebSocket error: {e} ---")
-        sys.stdout.flush()
-        import traceback
-        traceback.print_exc()
+        logger.error(f"[WS] Error: {e}", exc_info=True)
     finally:
+        if orchestrator:
+            await orchestrator.handle_disconnect()
         try:
             await websocket.close()
         except:

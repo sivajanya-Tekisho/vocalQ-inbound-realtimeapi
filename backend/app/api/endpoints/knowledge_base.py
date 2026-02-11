@@ -110,7 +110,15 @@ async def list_documents():
         )
     except Exception as e:
         logger.error(f"Error listing documents: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error listing documents: {str(e)}")
+        # Return empty list instead of error to prevent UI breaking
+        return JSONResponse(
+            content={
+                "success": True,
+                "count": 0,
+                "documents": [],
+                "warning": str(e)
+            }
+        )
 
 @router.delete("/{doc_id}")
 async def delete_document(doc_id: str):

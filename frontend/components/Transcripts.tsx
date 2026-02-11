@@ -7,6 +7,8 @@ const Transcripts: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCall, setSelectedCall] = useState<CallMetric | null>(null);
   const [calls, setCalls] = useState<CallMetric[]>([]);
+  const [dateFilter, setDateFilter] = useState<string>('all'); // 'all', 'today', 'week', 'month', 'custom'
+  const [customDate, setCustomDate] = useState<string>(''); // For custom date picker
 
   React.useEffect(() => {
     api.getCalls().then(data => {
@@ -25,9 +27,68 @@ const Transcripts: React.FC = () => {
     }
   }, [selectedCall?.id]);
 
+  const filterByDate = (call: CallMetric) => {
+    if (dateFilter === 'all') return true;
+    
+    const callDate = new Date(call.timestamp);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (dateFilter === 'today') {
+      const callDay = new Date(callDate);
+      callDay.setHours(0, 0, 0, 0);
+      return callDay.getTime() === today.getTime();
+    }
+    
+    if (dateFilter === 'yesterday') {
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const callDay = new Date(callDate);
+      callDay.setHours(0, 0, 0, 0);
+      return callDay.getTime() === yesterday.getTime();
+    }
+    
+    if (dateFilter === 'week') {
+      const weekAgo = new Date(today);
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      return callDate >= weekAgo;
+    }
+    
+    if (dateFilter === 'month') {
+      const monthAgo = new Date(today);
+      monthAgo.setMonth(monthAgo.getMonth() - 1);
+      return callDate >= monthAgo;
+    }
+    
+    if (dateFilter === 'custom' && customDate) {
+      const selectedDate = new Date(customDate);
+      selectedDate.setHours(0, 0, 0, 0);
+      const callDay = new Date(callDate);
+      callDay.setHours(0, 0, 0, 0);
+      return callDay.getTime() === selectedDate.getTime();
+    }
+    
+    return true;
+  };
+
+  // Format timestamp (backend already sends IST timezone)
+  const formatIndianTime = (timestamp: string) => {
+    const date = new Date(timestamp);
+    return date.toLocaleString('en-IN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
+
   const filteredCalls = calls.filter(call =>
-    (call.caller && call.caller.includes(searchTerm)) ||
-    (call.intent && call.intent.toLowerCase().includes(searchTerm.toLowerCase()))
+    filterByDate(call) && (
+      (call.caller && call.caller.includes(searchTerm)) ||
+      (call.intent && call.intent.toLowerCase().includes(searchTerm.toLowerCase()))
+    )
   );
 
   const ConversationView = ({ call }: { call: CallMetric }) => (
@@ -45,10 +106,12 @@ const Transcripts: React.FC = () => {
             <h3 className="text-lg font-bold font-display text-white">{call.caller}</h3>
             <div className="flex items-center gap-2 mt-0.5">
               <span className="text-[10px] text-slate-500 font-bold uppercase">
-                {new Date(call.timestamp).toLocaleString([], { month: '2-digit', day: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true })}
+                {formatIndianTime(call.timestamp)} IST
               </span>
               <span className="w-1 h-1 rounded-full bg-slate-700"></span>
               <span className="text-[10px] font-bold text-violet-400 uppercase tracking-widest">{call.intent}</span>
+              <span className="w-1 h-1 rounded-full bg-slate-700"></span>
+              <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">{call.token_usage || 0} tokens</span>
             </div>
           </div>
         </div>
@@ -136,6 +199,42 @@ const Transcripts: React.FC = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
+            
+            {/* Date Filter Dropdown */}
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <select
+                  value={dateFilter}
+                  onChange={(e) => setDateFilter(e.target.value)}
+                  className="appearance-none bg-slate-900/80 border border-white/10 rounded-xl px-4 py-3 pr-10 text-sm text-slate-200 focus:outline-none focus:border-violet-500/50 transition-all cursor-pointer min-w-[180px]"
+                >
+                  <option value="all">All Time</option>
+                  <option value="today">Today</option>
+                  <option value="yesterday">Yesterday</option>
+                  <option value="week">Last 7 Days</option>
+                  <option value="month">Last 30 Days</option>
+                  <option value="custom">Select Date</option>
+                </select>
+                <svg className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+              
+              {/* Custom Date Picker */}
+              {dateFilter === 'custom' && (
+                <input
+                  type="date"
+                  value={customDate}
+                  onChange={(e) => setCustomDate(e.target.value)}
+                  className="bg-slate-900/80 border border-white/10 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-violet-500/50 transition-all"
+                />
+              )}
+            </div>
+            
+            {/* Results count */}
+            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
+              {filteredCalls.length} {filteredCalls.length === 1 ? 'call' : 'calls'} found
+            </p>
           </div>
 
           <div className="space-y-3 overflow-y-auto scrollbar-hide">
@@ -151,12 +250,19 @@ const Transcripts: React.FC = () => {
                 <div className="flex justify-between items-start mb-3">
                   <div>
                     <p className="text-sm font-bold text-white group-hover:text-violet-400 transition-colors">{call.caller}</p>
-                    <p className="text-[10px] text-slate-500 font-bold mt-1 uppercase tracking-widest">{call.status} • {call.duration}s</p>
+                    <p className="text-[10px] text-slate-500 font-bold mt-1 uppercase tracking-widest">{formatIndianTime(call.timestamp)} IST</p>
                   </div>
                   <div className={`px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-widest ${call.intent === 'appointment' ? 'bg-cyan-500/10 text-cyan-500' : 'bg-violet-500/10 text-violet-500'
                     }`}>
                     {call.intent}
                   </div>
+                </div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-[9px] text-slate-500 font-bold uppercase">{call.status}</span>
+                  <span className="w-1 h-1 rounded-full bg-slate-700"></span>
+                  <span className="text-[9px] text-slate-500 font-bold uppercase">{call.duration}s</span>
+                  <span className="w-1 h-1 rounded-full bg-slate-700"></span>
+                  <span className="text-[9px] text-emerald-500 font-bold uppercase">{call.token_usage || 0} tokens</span>
                 </div>
                 <p className="text-xs text-slate-400 line-clamp-2 italic leading-relaxed">"{call.summary}"</p>
               </div>

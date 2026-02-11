@@ -1,5 +1,4 @@
 import logging
-import sys
 import asyncio
 from qdrant_client import AsyncQdrantClient
 from qdrant_client.http import models
@@ -10,8 +9,7 @@ logger = logging.getLogger(__name__)
 
 class QdrantService:
     def __init__(self):
-        print("--- Initializing Async QdrantService ---")
-        sys.stdout.flush()
+        logger.info("--- Initializing Async QdrantService ---")
         self.client = AsyncQdrantClient(
             url=settings.QDRANT_URL,
             api_key=settings.QDRANT_API_KEY
@@ -21,8 +19,7 @@ class QdrantService:
         
         # We'll use a task to ensure collection exists without blocking init
         asyncio.create_task(self._ensure_collection())
-        print("--- Async QdrantService Initialized ---")
-        sys.stdout.flush()
+        logger.info("--- Async QdrantService Initialized ---")
 
     async def _ensure_collection(self):
         """Ensure the RAG collection exists with the correct dimensions."""
@@ -37,8 +34,7 @@ class QdrantService:
                 info = await self.client.get_collection(self.collection_name)
                 current_size = info.config.params.vectors.size
                 if current_size != self.vector_size:
-                    print(f"--- Qdrant Dimension Mismatch: {current_size} vs {self.vector_size}. Recreating... ---")
-                    sys.stdout.flush()
+                    logger.warning(f"--- Qdrant Dimension Mismatch: {current_size} vs {self.vector_size}. Recreating... ---")
                     recreate = True
             
             if not exists or recreate:

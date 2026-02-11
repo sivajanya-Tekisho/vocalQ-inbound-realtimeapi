@@ -10,11 +10,8 @@ openai
 pandas
 qdrant-client
 python-dateutil
-faster-whisper
-silero-vad
-torch
-sentence-transformers
 PyPDF2
 python-multipart
 numpy
-python-docx
+python-docx 
+

@@ -10,6 +10,7 @@ export const api = {
         avg_duration: number;
         intent_distribution: Record<string, number>;
         calls_by_hour: { name: string; value: number }[];
+        peak_window: string;
     }> {
         const response = await fetch(`${API_BASE_URL}/calls/analytics`);
         if (!response.ok) throw new Error('Failed to fetch analytics');

@@ -19,6 +19,7 @@ export interface CallMetric {
   language: string;
   summary?: string;
   transcript?: TranscriptPart[];
+  token_usage?: number;
 }
 
 export interface ChartData {

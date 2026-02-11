@@ -18,6 +18,7 @@ const KnowledgeBase: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [success, setSuccess] = useState<string | null>(null);
 
     const fetchDocs = async () => {
         setLoading(true);
@@ -66,6 +67,7 @@ const KnowledgeBase: React.FC = () => {
 
         setUploading(true);
         setError(null);
+        setSuccess(null);
 
         const formData = new FormData();
         formData.append('file', file);
@@ -76,13 +78,28 @@ const KnowledgeBase: React.FC = () => {
                 body: formData,
             });
 
-            if (!response.ok) throw new Error('Upload failed');
+            const data = await response.json();
+            
+            if (!response.ok || !data.success) {
+                throw new Error(data.error || data.detail || 'Upload failed');
+            }
 
+            // Show success message
+            setSuccess(`Successfully uploaded "${file.name}" with ${data.chunks_created} chunks`);
+            console.log('Upload successful:', data);
+            
+            // Clear success message after 5 seconds
+            setTimeout(() => setSuccess(null), 5000);
+            
+            // Refresh the document list
             await fetchDocs();
-        } catch (err) {
-            setError('Upload failed. Ensure backend is running and key is valid.');
+        } catch (err: any) {
+            console.error('Upload error:', err);
+            setError(err.message || 'Upload failed. Ensure backend is running.');
         } finally {
             setUploading(false);
+            // Reset file input
+            e.target.value = '';
         }
     };
 
@@ -122,7 +139,7 @@ const KnowledgeBase: React.FC = () => {
                     type="file"
                     onChange={handleFileUpload}
                     className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                    accept=".pdf,.txt"
+                    accept=".pdf,.txt,.docx"
                 />
                 <div className="flex flex-col items-center justify-center text-center space-y-4 py-4">
                     <div className="w-14 h-14 rounded-2xl bg-violet-600/10 flex items-center justify-center border border-violet-500/20 group-hover:bg-violet-600/20 transition-all">
@@ -136,7 +153,7 @@ const KnowledgeBase: React.FC = () => {
                     </div>
                     <div>
                         <p className="text-sm font-bold text-white">Upload Training Data</p>
-                        <p className="text-[10px] text-slate-500 mt-1 uppercase font-bold tracking-widest">PDF / TXT (10MB Limit)</p>
+                        <p className="text-[10px] text-slate-500 mt-1 uppercase font-bold tracking-widest">PDF / TXT / DOCX (10MB Limit)</p>
                     </div>
                 </div>
             </div>
@@ -145,6 +162,13 @@ const KnowledgeBase: React.FC = () => {
                 <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-400 text-[10px] font-bold uppercase flex items-center gap-3">
                     <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     {error}
+                </div>
+            )}
+
+            {success && (
+                <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400 text-[10px] font-bold uppercase flex items-center gap-3 animate-in fade-in duration-300">
+                    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    {success}
                 </div>
             )}
 
