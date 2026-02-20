@@ -369,7 +369,7 @@ class RealtimeOrchestrator:
         try:
             client = get_openai_client()
             response = await client.chat.completions.create(
-                model="gpt-4o-mini",
+                model=settings.CHAT_MODEL,
                 messages=[
                     {
                         "role": "system",
@@ -471,7 +471,7 @@ class RealtimeOrchestrator:
         try:
             client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
             response = client.chat.completions.create(
-                model="gpt-4o-mini",
+                model=settings.CHAT_MODEL,
                 messages=[
                     {
                         "role": "system",

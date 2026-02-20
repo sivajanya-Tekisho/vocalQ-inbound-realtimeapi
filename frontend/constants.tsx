@@ -2,15 +2,21 @@
 import React from 'react';
 
 export const COLORS = {
-  primary: '#8b5cf6', // Violet
-  secondary: '#06b6d4', // Cyan
+  primary: '#FF6B35', // Orange (main brand color)
+  secondary: '#6366f1', // Indigo
   success: '#10b981', // Emerald
   danger: '#ef4444', // Rose
   warning: '#f59e0b', // Amber
   info: '#3b82f6', // Blue
-  deep: '#6366f1', // Indigo
-  muted: '#475569',
-  bg: '#050811'
+  deep: '#4f46e5', // Deep Indigo
+  muted: '#6b7280', // Gray
+
+  // Light theme specific
+  background: '#F8F9FA', // Light gray background
+  surface: '#FFFFFF', // White cards
+  text: '#1F2937', // Dark gray text
+  textMuted: '#6B7280', // Muted text
+  border: '#E5E7EB', // Light border
 };
 
 export const Icons = {

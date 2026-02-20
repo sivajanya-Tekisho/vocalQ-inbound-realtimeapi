@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VocalQ Inbound — Backend Documentation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0e1a;
+            --surface: #111827;
+            --surface-2: #1a2234;
+            --border: #1e293b;
+            --text: #e2e8f0;
+            --text-muted: #94a3b8;
+            --primary: #8b5cf6;
+            --primary-light: #a78bfa;
+            --cyan: #06b6d4;
+            --emerald: #10b981;
+            --rose: #f43f5e;
+            --amber: #f59e0b;
+            --indigo: #6366f1;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            padding: 2rem;
+        }
+        .container { max-width: 960px; margin: 0 auto; }
+
+        /* Header */
+        .doc-header {
+            text-align: center;
+            padding: 3rem 0 2rem;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 3rem;
+        }
+        .doc-header h1 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            background: linear-gradient(135deg, var(--primary), var(--cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .doc-header .subtitle {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+        .doc-header .badge {
+            display: inline-block;
+            margin-top: 1rem;
+            padding: 0.3rem 1rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 9999px;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            font-weight: 700;
+            color: var(--primary-light);
+        }
+
+        /* Sections */
+        .section {
+            margin-bottom: 3rem;
+        }
+        h2 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            color: #fff;
+            margin-bottom: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+        h2 .icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+        }
+        h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--primary-light);
+            margin: 1.5rem 0 0.8rem;
+        }
+        h4 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--cyan);
+            margin: 1rem 0 0.5rem;
+        }
+        p { margin-bottom: 0.8rem; color: var(--text-muted); font-size: 0.9rem; }
+
+        /* Cards */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .card-accent {
+            border-left: 3px solid var(--primary);
+        }
+
+        /* Code */
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82rem;
+            background: var(--surface-2);
+            padding: 0.15rem 0.45rem;
+            border-radius: 4px;
+            color: var(--cyan);
+        }
+        pre {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.2rem;
+            overflow-x: auto;
+            margin: 0.8rem 0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            line-height: 1.8;
+            color: var(--text-muted);
+        }
+
+        /* Tables */
+        table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.85rem; }
+        th {
+            text-align: left;
+            padding: 0.8rem 1rem;
+            background: var(--surface-2);
+            color: var(--primary-light);
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            letter-spacing: 0.1em;
+            border-bottom: 2px solid var(--border);
+        }
+        td {
+            padding: 0.7rem 1rem;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-muted);
+        }
+        tr:hover td { background: var(--surface); }
+
+        /* Badges */
+        .method {
+            display: inline-block;
+            padding: 0.15rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .method-get { background: #065f4620; color: var(--emerald); border: 1px solid #065f4640; }
+        .method-post { background: #7c3aed20; color: var(--primary-light); border: 1px solid #7c3aed40; }
+        .method-delete { background: #e1134220; color: var(--rose); border: 1px solid #e1134240; }
+        .method-ws { background: #0891b220; color: var(--cyan); border: 1px solid #0891b240; }
+
+        /* Flow */
+        .flow-step {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.2rem;
+        }
+        .flow-number {
+            min-width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 0.8rem;
+            flex-shrink: 0;
+        }
+        .flow-content h4 { margin-top: 0.2rem; }
+
+        /* Divider */
+        hr {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 2rem 0;
+        }
+
+        /* TOC */
+        .toc {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem 2rem;
+            margin-bottom: 2.5rem;
+        }
+        .toc h3 { margin-top: 0; color: #fff; }
+        .toc ol { padding-left: 1.2rem; }
+        .toc li { margin: 0.4rem 0; }
+        .toc a {
+            color: var(--primary-light);
+            text-decoration: none;
+            font-size: 0.88rem;
+            font-weight: 500;
+        }
+        .toc a:hover { text-decoration: underline; }
+
+        /* File tag */
+        .file-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            padding: 0.2rem 0.7rem;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--amber);
+        }
+
+        .tech-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 0.8rem;
+            margin: 1rem 0;
+        }
+        .tech-item {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 0.8rem;
+            text-align: center;
+            font-size: 0.82rem;
+            font-weight: 600;
+        }
+        .tech-item span { display: block; font-size: 0.7rem; color: var(--text-muted); font-weight: 400; margin-top: 0.2rem; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- HEADER -->
+    <div class="doc-header">
+        <h1>VocalQ Inbound — Backend</h1>
+        <p class="subtitle">Complete step-by-step documentation of the backend architecture, services, and call flow</p>
+        <span class="badge">FastAPI + OpenAI Realtime API + Twilio + Supabase + Qdrant</span>
+    </div>
+
+    <!-- TABLE OF CONTENTS -->
+    <div class="toc">
+        <h3>📋 Table of Contents</h3>
+        <ol>
+            <li><a href="#overview">Project Overview</a></li>
+            <li><a href="#tech">Technology Stack</a></li>
+            <li><a href="#structure">Folder Structure</a></li>
+            <li><a href="#config">Configuration &amp; Environment</a></li>
+            <li><a href="#startup">Application Startup</a></li>
+            <li><a href="#callflow">Inbound Call Flow (Step-by-Step)</a></li>
+            <li><a href="#endpoints">API Endpoints</a></li>
+            <li><a href="#services">Services (Deep Dive)</a></li>
+            <li><a href="#database">Database Schema</a></li>
+            <li><a href="#models">AI Models Used</a></li>
+            <li><a href="#rag">RAG / Knowledge Base Pipeline</a></li>
+        </ol>
+    </div>
+
+    <!-- 1. OVERVIEW -->
+    <div class="section" id="overview">
+        <h2><span class="icon" style="background:#8b5cf620;color:var(--primary)">🎯</span> 1. Project Overview</h2>
+        <div class="card card-accent">
+            <p><strong>VocalQ Inbound</strong> is an AI-powered inbound voice assistant built by Tekisho. When a customer calls a Twilio phone number, the system:</p>
+            <ol style="color:var(--text-muted); font-size:0.9rem; padding-left:1.5rem; margin-top:0.5rem;">
+                <li>Receives the call via a <strong>Twilio webhook</strong></li>
+                <li>Opens a <strong>bidirectional WebSocket</strong> media stream</li>
+                <li>Bridges audio in real-time to <strong>OpenAI's Realtime API</strong></li>
+                <li>The AI assistant converses naturally with the caller</li>
+                <li>Uses a <strong>Qdrant vector database</strong> for RAG-based knowledge lookups</li>
+                <li>Logs transcripts, summaries, and token usage to <strong>Supabase</strong></li>
+            </ol>
+        </div>
+    </div>
+
+    <!-- 2. TECH STACK -->
+    <div class="section" id="tech">
+        <h2><span class="icon" style="background:#06b6d420;color:var(--cyan)">⚡</span> 2. Technology Stack</h2>
+        <div class="tech-grid">
+            <div class="tech-item">FastAPI <span>Web framework</span></div>
+            <div class="tech-item">Uvicorn <span>ASGI server</span></div>
+            <div class="tech-item">OpenAI <span>Realtime + Chat</span></div>
+            <div class="tech-item">Twilio <span>Voice calls</span></div>
+            <div class="tech-item">Supabase <span>PostgreSQL DB</span></div>
+            <div class="tech-item">Qdrant <span>Vector DB</span></div>
+            <div class="tech-item">WebSockets <span>Bidirectional audio</span></div>
+            <div class="tech-item">Pydantic <span>Config/validation</span></div>
+        </div>
+        <h4>Python Dependencies (requirements.txt)</h4>
+        <pre>fastapi, uvicorn, supabase, pydantic, pydantic-settings,
+python-dotenv, websockets, httpx, openai, pandas,
+qdrant-client, python-dateutil, PyPDF2, python-multipart,
+numpy, python-docx</pre>
+    </div>
+
+    <!-- 3. FOLDER STRUCTURE -->
+    <div class="section" id="structure">
+        <h2><span class="icon" style="background:#10b98120;color:var(--emerald)">📁</span> 3. Folder Structure</h2>
+        <pre>backend/
+├── .env                          # Environment variables
+├── run_server.py                 # Entry point (uvicorn launcher)
+├── requirements.txt              # Python dependencies
+├── schema.sql                    # Supabase DB schema
+├── app/
+│   ├── __init__.py
+│   ├── main.py                   # FastAPI app creation, CORS, router
+│   ├── api/
+│   │   ├── api.py                # Router aggregation
+│   │   └── endpoints/
+│   │       ├── calls.py          # Call CRUD + Twilio webhook + Analytics
+│   │       ├── websocket.py      # /stream WebSocket endpoint
+│   │       ├── admin.py          # Greeting settings
+│   │       └── knowledge_base.py # KB upload/list/delete/info
+│   ├── core/
+│   │   ├── config.py             # Settings (pydantic-settings)
+│   │   ├── supabase_client.py    # Supabase client singleton
+│   │   └── greeting_config.py    # In-memory greeting state
+│   └── services/
+│       ├── realtime_service.py   # OpenAI Realtime WebSocket client
+│       ├── realtime_orchestrator.py # Call orchestration logic
+│       ├── qdrant_service.py     # Qdrant vector DB operations
+│       ├── audio_service.py      # OpenAI embeddings client
+│       └── document_ingestion_service.py  # RAG doc ingestion pipeline
+├── knowledge_base/
+│   └── uploaded/                 # Stored uploaded documents
+├── scripts/
+│   ├── dump_qdrant.py
+│   └── sync_kb.py
+└── docs/</pre>
+    </div>
+
+    <!-- 4. CONFIGURATION -->
+    <div class="section" id="config">
+        <h2><span class="icon" style="background:#f59e0b20;color:var(--amber)">⚙️</span> 4. Configuration &amp; Environment</h2>
+        <p>All configuration is managed via <code>.env</code> and loaded through <code>pydantic-settings</code> in <span class="file-tag">app/core/config.py</span>.</p>
+
+        <table>
+            <thead>
+                <tr><th>Variable</th><th>Purpose</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><code>PROJECT_NAME</code></td><td>App name (used in OpenAPI docs)</td></tr>
+                <tr><td><code>API_V1_STR</code></td><td>API prefix — <code>/api/v1</code></td></tr>
+                <tr><td><code>BACKEND_CORS_ORIGINS</code></td><td>Allowed CORS origins</td></tr>
+                <tr><td><code>SUPABASE_URL</code></td><td>Supabase project URL</td></tr>
+                <tr><td><code>SUPABASE_KEY</code></td><td>Supabase anon key</td></tr>
+                <tr><td><code>OPENAI_API_KEY</code></td><td>OpenAI API key</td></tr>
+                <tr><td><code>TWILIO_ACCOUNT_SID</code></td><td>Twilio account ID</td></tr>
+                <tr><td><code>TWILIO_AUTH_TOKEN</code></td><td>Twilio auth token</td></tr>
+                <tr><td><code>TWILIO_PHONE_NUMBER</code></td><td>Twilio phone number</td></tr>
+                <tr><td><code>QDRANT_URL</code></td><td>Qdrant cloud cluster URL</td></tr>
+                <tr><td><code>QDRANT_API_KEY</code></td><td>Qdrant cluster API key</td></tr>
+                <tr><td><code>REALTIME_MODEL</code></td><td>OpenAI Realtime model name</td></tr>
+                <tr><td><code>CHAT_MODEL</code></td><td>Chat completions model (summaries, transliteration)</td></tr>
+                <tr><td><code>EMBEDDING_MODEL</code></td><td>Embedding model for RAG</td></tr>
+                <tr><td><code>WHISPER_MODEL</code></td><td>Whisper model for transcription</td></tr>
+                <tr><td><code>VAD_AGGRESSIVENESS</code></td><td>Voice Activity Detection level</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 5. STARTUP -->
+    <div class="section" id="startup">
+        <h2><span class="icon" style="background:#6366f120;color:var(--indigo)">🚀</span> 5. Application Startup</h2>
+        <p>How the server boots up, step-by-step:</p>
+
+        <div class="flow-step">
+            <div class="flow-number">1</div>
+            <div class="flow-content">
+                <h4>run_server.py</h4>
+                <p>Entry point — runs <code>uvicorn.run("app.main:app", host="0.0.0.0", port=8000)</code> with debug logging and hot-reload enabled.</p>
+            </div>
+        </div>
+        <div class="flow-step">
+            <div class="flow-number">2</div>
+            <div class="flow-content">
+                <h4>app/main.py → FastAPI app creation</h4>
+                <p>Creates the FastAPI instance, configures file+console logging, sets <strong>permissive CORS</strong> (all origins allowed), and includes the main API router under <code>/api/v1</code>.</p>
+            </div>
+        </div>
+        <div class="flow-step">
+            <div class="flow-number">3</div>
+            <div class="flow-content">
+                <h4>app/api/api.py → Router aggregation</h4>
+                <p>Mounts four sub-routers:</p>
+                <ul style="color:var(--text-muted);font-size:0.88rem;padding-left:1.2rem;">
+                    <li><code>/calls</code> → calls.py</li>
+                    <li><code>/admin</code> → admin.py</li>
+                    <li><code>/stream</code> → websocket.py (WebSocket, no prefix)</li>
+                    <li><code>/admin/knowledge</code> → knowledge_base.py</li>
+                </ul>
+            </div>
+        </div>
+        <div class="flow-step">
+            <div class="flow-number">4</div>
+            <div class="flow-content">
+                <h4>Core services initialize</h4>
+                <p><code>supabase_client.py</code> creates a Supabase client singleton. <code>config.py</code> loads <code>.env</code> via pydantic-settings. <code>greeting_config.py</code> holds the default greeting in-memory.</p>
+            </div>
+        </div>
+
+        <h4>Start Command</h4>
+        <pre>cd backend
+python run_server.py
+# or directly:
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload</pre>
+    </div>
+
+    <!-- 6. INBOUND CALL FLOW -->
+    <div class="section" id="callflow">
+        <h2><span class="icon" style="background:#f43f5e20;color:var(--rose)">📞</span> 6. Inbound Call Flow (Step-by-Step)</h2>
+        <p>This is the complete journey of an inbound phone call from ring to hang-up:</p>
+
+        <div class="card" style="border-top: 2px solid var(--cyan);">
+            <div class="flow-step">
+                <div class="flow-number">1</div>
+                <div class="flow-content">
+                    <h4>Caller dials the Twilio phone number</h4>
+                    <p>Twilio receives the call and sends an HTTP POST to the configured webhook URL: <code>POST /api/v1/calls/twilio</code> (or <code>/voice</code>).</p>
+                </div>
+            </div>
+            <div class="flow-step">
+                <div class="flow-number">2</div>
+                <div class="flow-content">
+                    <h4>TwiML Webhook Response</h4>
+                    <p><span class="file-tag">calls.py → twilio_webhook()</span> reads the caller number from the POST form data, determines the WebSocket URL (<code>wss://host/api/v1/stream</code>), and returns TwiML XML instructing Twilio to open a bidirectional <code>&lt;Stream&gt;</code> to our WebSocket, passing the caller number as a custom parameter.</p>
+                </div>
+            </div>
+            <div class="flow-step">
+                <div class="flow-number">3</div>
+                <div class="flow-content">
+                    <h4>WebSocket Connection Opens</h4>
+                    <p><span class="file-tag">websocket.py → websocket_endpoint()</span> accepts the Twilio WebSocket. Creates a <code>RealtimeOrchestrator</code> instance for this call session.</p>
+                </div>
+            </div>
+            <div class="flow-step">
+                <div class="flow-number">4</div>
+                <div class="flow-content">
+                    <h4>Twilio "start" event</h4>
+                    <p>Twilio sends a <code>start</code> message with the <code>streamSid</code> and custom parameters. The orchestrator stores the <code>stream_sid</code> and <code>caller_number</code>, then calls <code>orchestrator.start()</code> as an async task.</p>
+                </div>
+            </div>
+            <div class="flow-step">
+                <div class="flow-number">5</div>
+                <div class="flow-content">
+                    <h4>Connect to OpenAI Realtime API</h4>
+                    <p><span class="file-tag">realtime_service.py → connect()</span> opens a WebSocket to <code>wss://api.openai.com/v1/realtime?model=&lt;REALTIME_MODEL&gt;</code> with the API key in headers.</p>
+                </div>
+            </div>
+            <div class="flow-step">
+                <div class="flow-number">6</div>
+                <div class="flow-content">
+                    <h4>Session Configuration</h4>
+                    <p><code>update_session()</code> sends a <code>session.update</code> event to OpenAI configuring: audio format (<strong>g711_ulaw</strong>), voice (<strong>alloy</strong>), temperature (0.6), max tokens (150), server-side VAD, the system prompt, and the <code>search_knowledge_base</code> tool definition.</p>
+                </div>
+            </div>
+            <div class="flow-step">
+                <div class="flow-number">7</div>
+                <div class="flow-content">
+                    <h4>Greeting Injection</h4>
+                    <p><span class="file-tag">realtime_orchestrator.py → _send_greeting()</span> loads the dynamic greeting from <code>greeting_config.py</code>, clears the input audio buffer, injects the greeting as a system instruction for the AI to speak, and triggers a response with both text + audio modalities.</p>
+                </div>
+            </div>
+            <div class="flow-step">
+                <div class="flow-number">8</div>
+                <div class="flow-content">
+                    <h4>DB Record Creation</h4>
+                    <p><code>_init_db_record()</code> inserts a new row in the Supabase <code>calls</code> table with the <code>call_id</code>, <code>caller_number</code>, <code>start_time</code> (in IST), and <code>call_status = "active"</code>.</p>
+                </div>
+            </div>
+            <div class="flow-step">
+                <div class="flow-number">9</div>
+                <div class="flow-content">
+                    <h4>Audio Bridge Loop</h4>
+                    <p>The WebSocket endpoint enters a loop: every <code>media</code> event from Twilio contains a base64-encoded audio chunk, which is forwarded directly to OpenAI's Realtime WebSocket via <code>input_audio_buffer.append</code>.</p>
+                </div>
+            </div>
+            <div class="flow-step">
+                <div class="flow-number">10</div>
+                <div class="flow-content">
+                    <h4>Event Handler (OpenAI → Twilio)</h4>
+                    <p><code>_handle_events()</code> runs concurrently, listening to OpenAI's WebSocket. It handles these events:</p>
+                    <ul style="color:var(--text-muted);font-size:0.85rem;padding-left:1.2rem;">
+                        <li><strong>response.audio.delta</strong> — Sends audio chunk back to Twilio as <code>media</code> event</li>
+                        <li><strong>response.done</strong> — Tracks token usage (input + output tokens)</li>
+                        <li><strong>input_audio_buffer.speech_started</strong> — Cancels current AI response (interruption handling)</li>
+                        <li><strong>response.function_call_arguments.done</strong> — Triggers KB search tool call</li>
+                        <li><strong>response.audio_transcript.done</strong> — Logs AI transcript</li>
+                        <li><strong>conversation.item.input_audio_transcription.completed</strong> — Logs user transcript</li>
+                        <li><strong>error</strong> — Logs OpenAI errors</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="flow-step">
+                <div class="flow-number">11</div>
+                <div class="flow-content">
+                    <h4>Knowledge Base Tool Call (if triggered)</h4>
+                    <p>When the AI decides to call <code>search_knowledge_base</code>, the orchestrator: parses the query, searches Qdrant using embedding similarity, and sends the results back to OpenAI as a tool output. The AI then formulates a response based on the retrieved context.</p>
+                </div>
+            </div>
+            <div class="flow-step">
+                <div class="flow-number">12</div>
+                <div class="flow-content">
+                    <h4>Transcript Logging</h4>
+                    <p>Both AI and user transcript snippets are collected in-memory. Non-ASCII text (e.g., Telugu) is transliterated to Roman script asynchronously using <code>gpt-4o-mini</code> in background tasks.</p>
+                </div>
+            </div>
+            <div class="flow-step">
+                <div class="flow-number">13</div>
+                <div class="flow-content">
+                    <h4>Call Disconnect</h4>
+                    <p>When the call ends (Twilio <code>stop</code> event or WebSocket disconnect), <code>handle_disconnect()</code>:</p>
+                    <ul style="color:var(--text-muted);font-size:0.85rem;padding-left:1.2rem;">
+                        <li>Closes the OpenAI WebSocket</li>
+                        <li>Calculates call duration</li>
+                        <li>Generates a summary using <code>gpt-4o-mini</code> (synchronous call)</li>
+                        <li>Updates the Supabase <code>calls</code> record with: status, end time, duration, summary, transcript, and token usage</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 7. ENDPOINTS -->
+    <div class="section" id="endpoints">
+        <h2><span class="icon" style="background:#10b98120;color:var(--emerald)">🔗</span> 7. API Endpoints</h2>
+
+        <h3>Calls Endpoints <span class="file-tag">calls.py</span></h3>
+        <table>
+            <thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead>
+            <tbody>
+                <tr><td><span class="method method-get">GET</span></td><td><code>/api/v1/calls/</code></td><td>List all calls (paginated, optional status filter). Joins with <code>call_summaries</code>. Returns normalized transcript format.</td></tr>
+                <tr><td><span class="method method-get">GET</span></td><td><code>/api/v1/calls/active</code></td><td>Get currently active calls (status = "active").</td></tr>
+                <tr><td><span class="method method-get">GET</span></td><td><code>/api/v1/calls/analytics</code></td><td>Returns: total/completed/missed calls, avg duration, intent distribution, calls by hour, peak window.</td></tr>
+                <tr><td><span class="method method-post">POST</span></td><td><code>/api/v1/calls/twilio</code></td><td>Twilio webhook — returns TwiML XML to start a media stream.</td></tr>
+                <tr><td><span class="method method-post">POST</span></td><td><code>/api/v1/calls/voice</code></td><td>Alias for the Twilio webhook (same handler).</td></tr>
+                <tr><td><span class="method method-get">GET</span></td><td><code>/api/v1/calls/{call_id}</code></td><td>Get single call details with transcript.</td></tr>
+            </tbody>
+        </table>
+
+        <h3>WebSocket Endpoint <span class="file-tag">websocket.py</span></h3>
+        <table>
+            <thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead>
+            <tbody>
+                <tr><td><span class="method method-ws">WS</span></td><td><code>/api/v1/stream</code></td><td>Twilio Media Stream WebSocket. Handles connected/start/media/stop events. Creates a RealtimeOrchestrator per call.</td></tr>
+            </tbody>
+        </table>
+
+        <h3>Admin Endpoints <span class="file-tag">admin.py</span></h3>
+        <table>
+            <thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead>
+            <tbody>
+                <tr><td><span class="method method-get">GET</span></td><td><code>/api/v1/admin/settings/greeting</code></td><td>Get current AI greeting message.</td></tr>
+                <tr><td><span class="method method-post">POST</span></td><td><code>/api/v1/admin/settings/greeting</code></td><td>Update the AI greeting message (stored in-memory).</td></tr>
+            </tbody>
+        </table>
+
+        <h3>Knowledge Base Endpoints <span class="file-tag">knowledge_base.py</span></h3>
+        <table>
+            <thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead>
+            <tbody>
+                <tr><td><span class="method method-post">POST</span></td><td><code>/api/v1/admin/knowledge/upload</code></td><td>Upload a document (PDF/TXT/DOCX). Parses, chunks (1000 chars / 200 overlap), embeds, and stores in Qdrant.</td></tr>
+                <tr><td><span class="method method-get">GET</span></td><td><code>/api/v1/admin/knowledge/list</code></td><td>List all ingested documents with metadata.</td></tr>
+                <tr><td><span class="method method-delete">DELETE</span></td><td><code>/api/v1/admin/knowledge/{doc_id}</code></td><td>Delete a document and all its chunks from Qdrant + local storage.</td></tr>
+                <tr><td><span class="method method-get">GET</span></td><td><code>/api/v1/admin/knowledge/info</code></td><td>Knowledge base stats (total docs, formats, chunk config, embedding model).</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 8. SERVICES -->
+    <div class="section" id="services">
+        <h2><span class="icon" style="background:#8b5cf620;color:var(--primary)">🧩</span> 8. Services (Deep Dive)</h2>
+
+        <h3>RealtimeService <span class="file-tag">realtime_service.py</span></h3>
+        <div class="card">
+            <p>WebSocket client that connects to OpenAI's Realtime API. Key methods:</p>
+            <table>
+                <thead><tr><th>Method</th><th>Purpose</th></tr></thead>
+                <tbody>
+                    <tr><td><code>connect()</code></td><td>Opens WebSocket to OpenAI Realtime with Bearer auth</td></tr>
+                    <tr><td><code>update_session()</code></td><td>Sends session.update with modalities, audio format, VAD config, instructions, and tools</td></tr>
+                    <tr><td><code>send_audio()</code></td><td>Appends base64 audio to input buffer</td></tr>
+                    <tr><td><code>create_response()</code></td><td>Triggers AI response generation</td></tr>
+                    <tr><td><code>send_tool_output()</code></td><td>Returns tool call result + triggers new response</td></tr>
+                    <tr><td><code>receive()</code></td><td>Async generator yielding parsed JSON events from OpenAI</td></tr>
+                    <tr><td><code>close()</code></td><td>Closes the WebSocket connection</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>RealtimeOrchestrator <span class="file-tag">realtime_orchestrator.py</span></h3>
+        <div class="card">
+            <p>The brain of each call session. Manages the full lifecycle:</p>
+            <ul style="color:var(--text-muted);font-size:0.88rem;padding-left:1.2rem; margin-top:0.5rem;">
+                <li><strong>State</strong>: call_id, stream_sid, caller_number, timestamps, token usage, transcripts</li>
+                <li><strong>start()</strong>: Connects to OpenAI, configures session, sends greeting</li>
+                <li><strong>_handle_events()</strong>: Bridges audio from OpenAI → Twilio, handles interruptions, tool calls, transcripts, token tracking</li>
+                <li><strong>_handle_tool_call()</strong>: Searches Qdrant KB and returns results to OpenAI</li>
+                <li><strong>_translate_to_english_async()</strong>: Transliterates non-ASCII text using gpt-4o-mini</li>
+                <li><strong>handle_disconnect()</strong>: Generates summary, saves everything to Supabase</li>
+            </ul>
+            <p style="margin-top:0.8rem;"><strong>System Prompt</strong> defines the AI's behavior: multilingual support, language mirroring, response length limits, interruption handling, guardrails, and call closure behavior with end_call tool.</p>
+        </div>
+
+        <h3>QdrantService <span class="file-tag">qdrant_service.py</span></h3>
+        <div class="card">
+            <p>Async client for the Qdrant vector database (collection: <code>knowledge_base</code>, 1536 dims, COSINE distance).</p>
+            <table>
+                <thead><tr><th>Method</th><th>Purpose</th></tr></thead>
+                <tbody>
+                    <tr><td><code>_ensure_collection()</code></td><td>Creates or recreates collection if dimensions mismatch</td></tr>
+                    <tr><td><code>search(query)</code></td><td>Embeds query → searches top 3 nearest chunks → returns text</td></tr>
+                    <tr><td><code>add_document()</code></td><td>Embeds and stores a single document</td></tr>
+                    <tr><td><code>add_point()</code></td><td>Stores a pre-embedded chunk with metadata</td></tr>
+                    <tr><td><code>list_documents()</code></td><td>Scrolls all points (max 100) with payloads</td></tr>
+                    <tr><td><code>delete_by_metadata()</code></td><td>Deletes all points matching a metadata filter</td></tr>
+                    <tr><td><code>clear_knowledge_base()</code></td><td>Drops and recreates the entire collection</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3>AudioService <span class="file-tag">audio_service.py</span></h3>
+        <div class="card">
+            <p>Provides OpenAI embeddings using <code>text-embedding-3-small</code> (1536 dimensions). Used by both the Qdrant search and the document ingestion pipeline. Also exposes a singleton <code>AsyncOpenAI</code> client used by the orchestrator for transliteration.</p>
+        </div>
+
+        <h3>DocumentIngestionService <span class="file-tag">document_ingestion_service.py</span></h3>
+        <div class="card">
+            <p>End-to-end RAG document ingestion pipeline:</p>
+            <ol style="color:var(--text-muted);font-size:0.88rem;padding-left:1.2rem; margin-top:0.5rem;">
+                <li><strong>Parse</strong> — Extracts text from PDF (PyPDF2), DOCX (python-docx), or TXT</li>
+                <li><strong>Chunk</strong> — Splits text into 1000-char chunks with 200-char overlap, preferring sentence boundaries</li>
+                <li><strong>Embed</strong> — Generates OpenAI embeddings for each chunk</li>
+                <li><strong>Store</strong> — Upserts each chunk as a point in Qdrant with metadata (source, doc_id, chunk_index)</li>
+                <li><strong>Save</strong> — Copies the original file to <code>knowledge_base/uploaded/{doc_id}/</code></li>
+            </ol>
+        </div>
+    </div>
+
+    <!-- 9. DATABASE -->
+    <div class="section" id="database">
+        <h2><span class="icon" style="background:#06b6d420;color:var(--cyan)">🗃️</span> 9. Database Schema (Supabase)</h2>
+
+        <h3>Table: <code>calls</code></h3>
+        <table>
+            <thead><tr><th>Column</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+            <tbody>
+                <tr><td><code>call_id</code></td><td>UUID (PK)</td><td>uuid_generate_v4()</td><td>Unique call identifier</td></tr>
+                <tr><td><code>caller_number</code></td><td>text</td><td>—</td><td>Caller's phone number</td></tr>
+                <tr><td><code>start_time</code></td><td>timestamptz</td><td>now()</td><td>Call start time (IST)</td></tr>
+                <tr><td><code>end_time</code></td><td>timestamptz</td><td>—</td><td>Call end time</td></tr>
+                <tr><td><code>call_duration</code></td><td>integer</td><td>—</td><td>Duration in seconds</td></tr>
+                <tr><td><code>language</code></td><td>text</td><td>'en-US'</td><td>Detected language</td></tr>
+                <tr><td><code>intent</code></td><td>text</td><td>—</td><td>Detected call intent</td></tr>
+                <tr><td><code>call_status</code></td><td>text</td><td>'active'</td><td>active / completed / missed</td></tr>
+                <tr><td><code>summary</code></td><td>text</td><td>—</td><td>AI-generated call summary</td></tr>
+                <tr><td><code>transcript</code></td><td>JSONB</td><td>'[]'</td><td>Array of {speaker, text, timestamp}</td></tr>
+                <tr><td><code>created_at</code></td><td>timestamptz</td><td>now()</td><td>Record creation time</td></tr>
+                <tr><td><code>token_usage</code></td><td>integer</td><td>—</td><td>Total tokens consumed</td></tr>
+            </tbody>
+        </table>
+
+        <h3>Table: <code>call_summaries</code></h3>
+        <table>
+            <thead><tr><th>Column</th><th>Type</th><th>Description</th></tr></thead>
+            <tbody>
+                <tr><td><code>id</code></td><td>UUID (PK)</td><td>Auto-generated</td></tr>
+                <tr><td><code>call_id</code></td><td>UUID (FK)</td><td>References calls.call_id</td></tr>
+                <tr><td><code>summary_text</code></td><td>text</td><td>Alternative summary storage</td></tr>
+                <tr><td><code>created_at</code></td><td>timestamptz</td><td>Record creation time</td></tr>
+            </tbody>
+        </table>
+        <p>Both tables have RLS enabled with a permissive policy for development (all access for anon).</p>
+    </div>
+
+    <!-- 10. AI MODELS -->
+    <div class="section" id="models">
+        <h2><span class="icon" style="background:#f43f5e20;color:var(--rose)">🤖</span> 10. AI Models Used</h2>
+        <table>
+            <thead><tr><th>Model</th><th>Env Variable</th><th>Used For</th><th>Called In</th></tr></thead>
+            <tbody>
+                <tr><td><code>gpt-4o-mini-realtime-preview-2024-12-17</code></td><td>REALTIME_MODEL</td><td>Voice conversation (Realtime API)</td><td>realtime_service.py</td></tr>
+                <tr><td><code>gpt-4o-mini</code></td><td>CHAT_MODEL</td><td>Call summaries, transliteration</td><td>realtime_orchestrator.py</td></tr>
+                <tr><td><code>text-embedding-3-small</code></td><td>EMBEDDING_MODEL</td><td>Knowledge base embeddings (1536 dims)</td><td>audio_service.py</td></tr>
+                <tr><td><code>whisper-1</code></td><td>—</td><td>Input audio transcription (inside Realtime session)</td><td>realtime_service.py</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 11. RAG PIPELINE -->
+    <div class="section" id="rag">
+        <h2><span class="icon" style="background:#f59e0b20;color:var(--amber)">📚</span> 11. RAG / Knowledge Base Pipeline</h2>
+        <div class="card" style="border-top: 2px solid var(--amber);">
+            <h4>Ingestion Flow (Upload)</h4>
+            <pre>User uploads PDF/TXT/DOCX via frontend
+  → POST /admin/knowledge/upload
+    → DocumentIngestionService.ingest_document()
+      1. Parse document (PyPDF2 / python-docx / plain text)
+      2. Clean and chunk text (1000 chars, 200 overlap, sentence-aware)
+      3. For each chunk:
+         a. Generate embedding via OpenAI text-embedding-3-small
+         b. Store in Qdrant with metadata (source, doc_id, chunk_index)
+      4. Save original file to knowledge_base/uploaded/{doc_id}/</pre>
+
+            <h4 style="margin-top:1.5rem;">Search Flow (During a Call)</h4>
+            <pre>AI decides to call search_knowledge_base tool
+  → RealtimeOrchestrator._handle_tool_call()
+    → QdrantService.search(query)
+      1. Embed query using text-embedding-3-small
+      2. Search Qdrant for top 3 nearest chunks (COSINE similarity)
+      3. Return chunk texts as tool output to OpenAI
+    → AI formulates response using retrieved context</pre>
+        </div>
+    </div>
+
+    <hr>
+    <p style="text-align:center; color:var(--text-muted); font-size:0.8rem; padding: 1rem 0 2rem;">
+        VocalQ Inbound Backend Documentation — Generated Feb 2026 — Tekisho
+    </p>
+
+</div>
+</body>
+</html>

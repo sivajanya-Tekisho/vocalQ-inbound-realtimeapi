@@ -49,6 +49,14 @@ class QdrantService:
                         distance=models.Distance.COSINE
                     )
                 )
+                
+                # Create payload index for doc_id to enable filtering/deletion
+                logger.info(f"Creating payload index for metadata.doc_id")
+                await self.client.create_payload_index(
+                    collection_name=self.collection_name,
+                    field_name="metadata.doc_id",
+                    field_schema=models.PayloadSchemaType.KEYWORD
+                )
         except Exception as e:
             logger.error(f"Failed to ensure Qdrant collection: {e}")
 

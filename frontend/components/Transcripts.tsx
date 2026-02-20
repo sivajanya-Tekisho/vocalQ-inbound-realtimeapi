@@ -2,21 +2,42 @@
 import React, { useState } from 'react';
 import { api } from '../services/api';
 import { CallMetric } from '../types';
+import { COLORS } from '../constants';
+import { getWebSocket } from '../services/websocket';
 
 const Transcripts: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCall, setSelectedCall] = useState<CallMetric | null>(null);
   const [calls, setCalls] = useState<CallMetric[]>([]);
-  const [dateFilter, setDateFilter] = useState<string>('all'); // 'all', 'today', 'week', 'month', 'custom'
-  const [customDate, setCustomDate] = useState<string>(''); // For custom date picker
+  const [dateFilter, setDateFilter] = useState<string>('all');
+  const [customDate, setCustomDate] = useState<string>('');
 
   React.useEffect(() => {
-    api.getCalls().then(data => {
-      const sorted = [...data].sort((a, b) =>
-        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-      );
-      setCalls(sorted);
-    }).catch(console.error);
+    const loadCalls = () => {
+      api.getCalls().then(data => {
+        const sorted = [...data].sort((a, b) =>
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        );
+        setCalls(sorted);
+      }).catch(console.error);
+    };
+
+    loadCalls();
+
+    // Listen to WebSocket for real-time updates
+    const ws = getWebSocket();
+    const handleNewCall = () => {
+      console.log('New call detected - refreshing list');
+      loadCalls();
+    };
+
+    ws.on('call_started', handleNewCall);
+    ws.on('call_ended', handleNewCall);
+
+    return () => {
+      ws.off('call_started', handleNewCall);
+      ws.off('call_ended', handleNewCall);
+    };
   }, []);
 
   React.useEffect(() => {
@@ -29,58 +50,39 @@ const Transcripts: React.FC = () => {
 
   const filterByDate = (call: CallMetric) => {
     if (dateFilter === 'all') return true;
-    
     const callDate = new Date(call.timestamp);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
     if (dateFilter === 'today') {
-      const callDay = new Date(callDate);
-      callDay.setHours(0, 0, 0, 0);
+      const callDay = new Date(callDate); callDay.setHours(0, 0, 0, 0);
       return callDay.getTime() === today.getTime();
     }
-    
     if (dateFilter === 'yesterday') {
-      const yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
-      const callDay = new Date(callDate);
-      callDay.setHours(0, 0, 0, 0);
+      const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
+      const callDay = new Date(callDate); callDay.setHours(0, 0, 0, 0);
       return callDay.getTime() === yesterday.getTime();
     }
-    
     if (dateFilter === 'week') {
-      const weekAgo = new Date(today);
-      weekAgo.setDate(weekAgo.getDate() - 7);
+      const weekAgo = new Date(today); weekAgo.setDate(weekAgo.getDate() - 7);
       return callDate >= weekAgo;
     }
-    
     if (dateFilter === 'month') {
-      const monthAgo = new Date(today);
-      monthAgo.setMonth(monthAgo.getMonth() - 1);
+      const monthAgo = new Date(today); monthAgo.setMonth(monthAgo.getMonth() - 1);
       return callDate >= monthAgo;
     }
-    
     if (dateFilter === 'custom' && customDate) {
-      const selectedDate = new Date(customDate);
-      selectedDate.setHours(0, 0, 0, 0);
-      const callDay = new Date(callDate);
-      callDay.setHours(0, 0, 0, 0);
+      const selectedDate = new Date(customDate); selectedDate.setHours(0, 0, 0, 0);
+      const callDay = new Date(callDate); callDay.setHours(0, 0, 0, 0);
       return callDay.getTime() === selectedDate.getTime();
     }
-    
     return true;
   };
 
-  // Format timestamp (backend already sends IST timezone)
   const formatIndianTime = (timestamp: string) => {
     const date = new Date(timestamp);
     return date.toLocaleString('en-IN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
+      day: '2-digit', month: '2-digit', year: '2-digit',
+      hour: '2-digit', minute: '2-digit', hour12: true
     });
   };
 
@@ -92,67 +94,89 @@ const Transcripts: React.FC = () => {
   );
 
   const ConversationView = ({ call }: { call: CallMetric }) => (
-    <div className="flex flex-col h-full bg-[#050811]">
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Header */}
-      <div className="p-6 border-b border-white/10 flex justify-between items-center bg-slate-900/60 sticky top-0 z-20 backdrop-blur-xl">
-        <div className="flex items-center gap-4">
+      <div style={{
+        padding: '20px 24px', borderBottom: '1px solid #E2E8F0',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        backgroundColor: '#FFFFFF', position: 'sticky', top: 0, zIndex: 20,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <button
             onClick={() => setSelectedCall(null)}
-            className="p-2.5 rounded-xl bg-white/5 text-slate-400 hover:bg-white/10 transition-colors"
+            style={{
+              padding: '8px', borderRadius: '8px', backgroundColor: '#F1F5F9',
+              border: 'none', cursor: 'pointer', color: '#64748B',
+            }}
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+            </svg>
           </button>
           <div>
-            <h3 className="text-lg font-bold font-display text-white">{call.caller}</h3>
-            <div className="flex items-center gap-2 mt-0.5">
-              <span className="text-[10px] text-slate-500 font-bold uppercase">
-                {formatIndianTime(call.timestamp)} IST
-              </span>
-              <span className="w-1 h-1 rounded-full bg-slate-700"></span>
-              <span className="text-[10px] font-bold text-violet-400 uppercase tracking-widest">{call.intent}</span>
-              <span className="w-1 h-1 rounded-full bg-slate-700"></span>
-              <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">{call.token_usage || 0} tokens</span>
+            <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#0F172A' }}>{call.caller}</h3>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
+              <span style={{ fontSize: '12px', color: '#94A3B8', fontWeight: '500' }}>{formatIndianTime(call.timestamp)} IST</span>
+              <span style={{ width: '4px', height: '4px', borderRadius: '50%', backgroundColor: '#CBD5E1', display: 'inline-block' }} />
+              <span style={{ fontSize: '12px', color: COLORS.primary, fontWeight: '600', textTransform: 'uppercase' }}>{call.intent}</span>
+              <span style={{ width: '4px', height: '4px', borderRadius: '50%', backgroundColor: '#CBD5E1', display: 'inline-block' }} />
+              <span style={{ fontSize: '12px', color: '#10B981', fontWeight: '600' }}>{call.token_usage || 0} tokens</span>
             </div>
           </div>
         </div>
-        <div className="hidden sm:flex flex-col items-end">
-          <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider ${call.sentiment === 'positive' ? 'bg-emerald-500/10 text-emerald-500' :
-            call.sentiment === 'negative' ? 'bg-rose-500/10 text-rose-500' : 'bg-slate-500/10 text-slate-500'
-            }`}>
-            {call.sentiment} Sentiment
-          </span>
-        </div>
+        <span style={{
+          padding: '4px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: '600',
+          backgroundColor: call.sentiment === 'positive' ? '#ECFDF5' : call.sentiment === 'negative' ? '#FEF2F2' : '#F1F5F9',
+          color: call.sentiment === 'positive' ? '#10B981' : call.sentiment === 'negative' ? '#EF4444' : '#64748B',
+          textTransform: 'capitalize',
+        }}>
+          {call.sentiment}
+        </span>
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-10 scrollbar-hide">
-        <div className="max-w-3xl mx-auto space-y-10 pb-20">
-
-          {/* AI Neural Summary */}
-          <div className="p-6 rounded-[1.5rem] bg-gradient-to-br from-violet-600/10 to-indigo-600/5 border border-violet-500/20 shadow-lg">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-6 h-6 rounded-lg bg-violet-600 flex items-center justify-center">
-                <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '24px 32px' }}>
+        <div style={{ maxWidth: '700px', margin: '0 auto' }}>
+          {/* Summary */}
+          <div style={{
+            padding: '20px', borderRadius: '12px', marginBottom: '32px',
+            backgroundColor: '#FFF7ED', border: '1px solid #FFEDD5',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+              <div style={{
+                width: '24px', height: '24px', borderRadius: '6px', backgroundColor: COLORS.primary,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <svg width="14" height="14" fill="none" stroke="white" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
               </div>
-              <h4 className="text-[10px] font-black text-violet-400 uppercase tracking-[0.2em]">Call Summary</h4>
+              <span style={{ fontSize: '12px', fontWeight: '700', color: COLORS.primary, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Call Summary</span>
             </div>
-            <p className="text-sm text-slate-200 leading-relaxed font-medium">"{call.summary || 'Summary processing...'}"</p>
+            <p style={{ fontSize: '14px', color: '#92400E', lineHeight: '1.6' }}>"{call.summary || 'Summary processing...'}"</p>
           </div>
 
           {/* Chat Bubbles */}
-          <div className="space-y-6">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {call.transcript && call.transcript.length > 0 ? (
               call.transcript.map((part, idx) => (
-                <div key={idx} className={`flex flex-col ${part.speaker === 'ai' ? 'items-start' : 'items-end'}`}>
-                  <div className={`relative max-w-[90%] sm:max-w-[80%] p-4 rounded-2xl transition-all ${part.speaker === 'ai'
-                    ? 'bg-slate-800/60 rounded-tl-none border border-white/5 text-slate-200 shadow-sm'
-                    : 'bg-violet-600 rounded-tr-none text-white shadow-xl shadow-violet-900/30'
-                    }`}>
-                    <p className="text-sm leading-relaxed">{part.text}</p>
-                    <div className={`mt-2 flex items-center gap-2 opacity-50 ${part.speaker === 'ai' ? 'justify-start' : 'justify-end'}`}>
-                      <span className="text-[8px] font-bold uppercase tracking-widest">{part.speaker === 'ai' ? 'VocalQ AI' : 'Customer'}</span>
-                      <span className="w-1 h-1 rounded-full bg-current opacity-30"></span>
-                      <span className="text-[8px] font-mono">
+                <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: part.speaker === 'ai' ? 'flex-start' : 'flex-end' }}>
+                  <div style={{
+                    maxWidth: '80%', padding: '14px 18px', borderRadius: '14px',
+                    backgroundColor: part.speaker === 'ai' ? '#F1F5F9' : COLORS.primary,
+                    color: part.speaker === 'ai' ? '#0F172A' : '#FFFFFF',
+                    borderTopLeftRadius: part.speaker === 'ai' ? '4px' : '14px',
+                    borderTopRightRadius: part.speaker === 'ai' ? '14px' : '4px',
+                  }}>
+                    <p style={{ fontSize: '14px', lineHeight: '1.6', margin: 0 }}>{part.text}</p>
+                    <div style={{
+                      marginTop: '8px', display: 'flex', alignItems: 'center', gap: '8px',
+                      opacity: 0.6, justifyContent: part.speaker === 'ai' ? 'flex-start' : 'flex-end',
+                    }}>
+                      <span style={{ fontSize: '10px', fontWeight: '600', textTransform: 'uppercase' }}>
+                        {part.speaker === 'ai' ? 'VocalQ AI' : 'Customer'}
+                      </span>
+                      <span style={{ fontSize: '10px', fontFamily: 'monospace' }}>
                         {new Date(part.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
                       </span>
                     </div>
@@ -160,133 +184,167 @@ const Transcripts: React.FC = () => {
                 </div>
               ))
             ) : (
-              <div className="text-center py-10">
-                <p className="text-slate-500 text-sm">No transcript available for this record.</p>
+              <div style={{ textAlign: 'center', padding: '40px' }}>
+                <p style={{ color: '#94A3B8', fontSize: '14px' }}>No transcript available for this record.</p>
               </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* Footer Actions */}
-      <div className="p-6 border-t border-white/10 bg-slate-950/90 backdrop-blur-md sticky bottom-0">
-        <div className="max-w-3xl mx-auto grid grid-cols-2 gap-4">
-          <button className="py-3.5 bg-white/5 hover:bg-white/10 text-slate-300 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all border border-white/5">
-            Export Transcript
-          </button>
-          <button className="py-3.5 bg-violet-600 hover:bg-violet-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-xl shadow-violet-600/30">
-            Sync to CRM
-          </button>
-        </div>
+      {/* Footer */}
+      <div style={{
+        padding: '16px 24px', borderTop: '1px solid #E2E8F0',
+        backgroundColor: '#FFFFFF', display: 'flex', gap: '12px', justifyContent: 'center',
+      }}>
+        <button style={{
+          padding: '10px 24px', backgroundColor: '#F1F5F9', border: '1px solid #E2E8F0',
+          borderRadius: '8px', color: '#64748B', fontWeight: '600', fontSize: '13px', cursor: 'pointer',
+        }}>Export Transcript</button>
+        <button style={{
+          padding: '10px 24px', backgroundColor: COLORS.primary, border: 'none',
+          borderRadius: '8px', color: '#FFFFFF', fontWeight: '600', fontSize: '13px', cursor: 'pointer',
+        }}>Sync to CRM</button>
       </div>
     </div>
   );
 
   return (
-    <div className="h-full relative pb-20 lg:pb-0">
-      <div className="flex flex-col lg:flex-row gap-8 h-full">
+    <div style={{ paddingTop: '24px' }}>
+      <div style={{ display: 'flex', gap: '32px', minHeight: 'calc(100vh - 140px)' }}>
         {/* List Pane */}
-        <div className={`w-full lg:w-1/3 flex flex-col gap-6 ${selectedCall ? 'hidden lg:flex' : 'flex'}`}>
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold font-display text-white tracking-tight">Call Records</h2>
-            <div className="relative group">
-              <svg className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+        <div style={{
+          width: '380px', flexShrink: 0,
+          display: selectedCall ? undefined : 'flex', flexDirection: 'column', gap: '20px',
+        }}>
+          <div>
+            <h2 style={{ fontSize: '24px', fontWeight: '700', color: '#0F172A', marginBottom: '16px', fontFamily: 'Inter, system-ui, sans-serif' }}>Call Records</h2>
+
+            {/* Search */}
+            <div style={{ position: 'relative', marginBottom: '12px' }}>
+              <svg style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', width: '16px', height: '16px', color: '#94A3B8' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
               <input
                 type="text"
-                placeholder="Search identity or intent..."
-                className="bg-slate-900/60 border border-white/10 rounded-[1.2rem] pl-11 pr-4 py-4 w-full text-sm text-slate-200 focus:outline-none focus:border-violet-500/50 transition-all"
+                placeholder="Search calls..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                style={{
+                  width: '100%', padding: '12px 14px 12px 42px',
+                  border: '1px solid #E2E8F0', borderRadius: '10px',
+                  fontSize: '14px', color: '#0F172A', backgroundColor: '#FFFFFF',
+                }}
               />
             </div>
-            
-            {/* Date Filter Dropdown */}
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <select
-                  value={dateFilter}
-                  onChange={(e) => setDateFilter(e.target.value)}
-                  className="appearance-none bg-slate-900/80 border border-white/10 rounded-xl px-4 py-3 pr-10 text-sm text-slate-200 focus:outline-none focus:border-violet-500/50 transition-all cursor-pointer min-w-[180px]"
-                >
-                  <option value="all">All Time</option>
-                  <option value="today">Today</option>
-                  <option value="yesterday">Yesterday</option>
-                  <option value="week">Last 7 Days</option>
-                  <option value="month">Last 30 Days</option>
-                  <option value="custom">Select Date</option>
-                </select>
-                <svg className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
-              
-              {/* Custom Date Picker */}
+
+            {/* Date Filter */}
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '12px' }}>
+              <select
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+                style={{
+                  padding: '10px 14px', border: '1px solid #E2E8F0', borderRadius: '8px',
+                  fontSize: '13px', color: '#0F172A', backgroundColor: '#FFFFFF', cursor: 'pointer',
+                }}
+              >
+                <option value="all">All Time</option>
+                <option value="today">Today</option>
+                <option value="yesterday">Yesterday</option>
+                <option value="week">Last 7 Days</option>
+                <option value="month">Last 30 Days</option>
+                <option value="custom">Select Date</option>
+              </select>
               {dateFilter === 'custom' && (
-                <input
-                  type="date"
-                  value={customDate}
-                  onChange={(e) => setCustomDate(e.target.value)}
-                  className="bg-slate-900/80 border border-white/10 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-violet-500/50 transition-all"
+                <input type="date" value={customDate} onChange={(e) => setCustomDate(e.target.value)}
+                  style={{
+                    padding: '10px 14px', border: '1px solid #E2E8F0', borderRadius: '8px',
+                    fontSize: '13px', color: '#0F172A', backgroundColor: '#FFFFFF',
+                  }}
                 />
               )}
             </div>
-            
-            {/* Results count */}
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
+
+            <p style={{ fontSize: '12px', color: '#94A3B8', fontWeight: '600', marginBottom: '16px' }}>
               {filteredCalls.length} {filteredCalls.length === 1 ? 'call' : 'calls'} found
             </p>
           </div>
 
-          <div className="space-y-3 overflow-y-auto scrollbar-hide">
+          {/* Call List */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', overflowY: 'auto' }}>
             {filteredCalls.map((call) => (
               <div
                 key={call.id}
                 onClick={() => setSelectedCall(call)}
-                className={`p-5 rounded-[1.5rem] border transition-all cursor-pointer relative overflow-hidden group ${selectedCall?.id === call.id
-                  ? 'bg-violet-600/10 border-violet-500/40 shadow-2xl shadow-violet-900/40'
-                  : 'bg-slate-900/40 border-white/5 hover:border-white/10'
-                  }`}
+                style={{
+                  padding: '16px', borderRadius: '12px', cursor: 'pointer',
+                  backgroundColor: selectedCall?.id === call.id ? '#FFF7ED' : '#FFFFFF',
+                  border: `1px solid ${selectedCall?.id === call.id ? '#FFEDD5' : '#E2E8F0'}`,
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  if (selectedCall?.id !== call.id) e.currentTarget.style.borderColor = '#CBD5E1';
+                }}
+                onMouseLeave={(e) => {
+                  if (selectedCall?.id !== call.id) e.currentTarget.style.borderColor = '#E2E8F0';
+                }}
               >
-                <div className="flex justify-between items-start mb-3">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '8px' }}>
                   <div>
-                    <p className="text-sm font-bold text-white group-hover:text-violet-400 transition-colors">{call.caller}</p>
-                    <p className="text-[10px] text-slate-500 font-bold mt-1 uppercase tracking-widest">{formatIndianTime(call.timestamp)} IST</p>
+                    <p style={{ fontSize: '14px', fontWeight: '600', color: '#0F172A' }}>{call.caller}</p>
+                    <p style={{ fontSize: '12px', color: '#94A3B8', marginTop: '2px' }}>{formatIndianTime(call.timestamp)} IST</p>
                   </div>
-                  <div className={`px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-widest ${call.intent === 'appointment' ? 'bg-cyan-500/10 text-cyan-500' : 'bg-violet-500/10 text-violet-500'
-                    }`}>
+                  <span style={{
+                    padding: '2px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '600',
+                    backgroundColor: call.intent === 'appointment' ? '#F0FDFA' : '#FDF4FF',
+                    color: call.intent === 'appointment' ? '#0D9488' : '#A855F7',
+                    textTransform: 'capitalize',
+                  }}>
                     {call.intent}
-                  </div>
+                  </span>
                 </div>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-[9px] text-slate-500 font-bold uppercase">{call.status}</span>
-                  <span className="w-1 h-1 rounded-full bg-slate-700"></span>
-                  <span className="text-[9px] text-slate-500 font-bold uppercase">{call.duration}s</span>
-                  <span className="w-1 h-1 rounded-full bg-slate-700"></span>
-                  <span className="text-[9px] text-emerald-500 font-bold uppercase">{call.token_usage || 0} tokens</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '12px', color: '#64748B', fontWeight: '500' }}>{call.status}</span>
+                  <span style={{ width: '3px', height: '3px', borderRadius: '50%', backgroundColor: '#CBD5E1', display: 'inline-block' }} />
+                  <span style={{ fontSize: '12px', color: '#64748B', fontWeight: '500' }}>{call.duration}s</span>
+                  <span style={{ width: '3px', height: '3px', borderRadius: '50%', backgroundColor: '#CBD5E1', display: 'inline-block' }} />
+                  <span style={{ fontSize: '12px', color: '#10B981', fontWeight: '500' }}>{call.token_usage || 0} tokens</span>
                 </div>
-                <p className="text-xs text-slate-400 line-clamp-2 italic leading-relaxed">"{call.summary}"</p>
+                <p style={{ fontSize: '13px', color: '#94A3B8', fontStyle: 'italic', lineHeight: '1.5', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                  "{call.summary}"
+                </p>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Detail Pane (Conversation UI) */}
-        <div className={`fixed inset-0 lg:relative lg:flex-1 lg:inset-auto z-[120] lg:z-10 ${selectedCall ? 'flex' : 'hidden lg:flex'}`}>
-          <div className="w-full h-full glass lg:rounded-[2.5rem] overflow-hidden border-white/5 lg:border flex flex-col shadow-2xl">
-            {selectedCall ? (
-              <ConversationView call={selectedCall} />
-            ) : (
-              <div className="flex-1 flex flex-col items-center justify-center text-center p-12 space-y-6">
-                <div className="w-20 h-20 bg-slate-900/80 rounded-[2rem] flex items-center justify-center text-slate-800 border border-white/5">
-                  <svg className="w-10 h-10 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" /></svg>
-                </div>
-                <div className="space-y-2">
-                  <h3 className="text-xl font-bold font-display text-white tracking-tight">Communications Node</h3>
-                  <p className="text-sm text-slate-500 max-w-xs mx-auto">Select a call record from the archives to review the AI-synthesized transcript and neural recap.</p>
-                </div>
+        {/* Detail Pane */}
+        <div style={{
+          flex: 1, backgroundColor: '#FFFFFF', borderRadius: '16px',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.06)', overflow: 'hidden',
+          display: 'flex', flexDirection: 'column',
+        }}>
+          {selectedCall ? (
+            <ConversationView call={selectedCall} />
+          ) : (
+            <div style={{
+              flex: 1, display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center', padding: '48px',
+            }}>
+              <div style={{
+                width: '72px', height: '72px', borderRadius: '16px', backgroundColor: '#F1F5F9',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px',
+              }}>
+                <svg width="32" height="32" fill="none" stroke="#CBD5E1" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
+                </svg>
               </div>
-            )}
-          </div>
+              <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#0F172A', marginBottom: '8px' }}>Select a Call</h3>
+              <p style={{ fontSize: '14px', color: '#94A3B8', maxWidth: '300px', textAlign: 'center', lineHeight: '1.6' }}>
+                Choose a call record from the list to review the transcript and summary.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>

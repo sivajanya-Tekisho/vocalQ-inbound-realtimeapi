@@ -3,23 +3,7 @@ import React, { useState } from 'react';
 import { api } from '../services/api';
 import { COLORS } from '../constants';
 import { CallMetric } from '../types';
-
-const AudioVisualizer = ({ active, color = COLORS.secondary }: { active: boolean, color?: string }) => (
-  <div className="flex items-end gap-[1px] h-3 px-1">
-    {[...Array(6)].map((_, i) => (
-      <div
-        key={i}
-        className="w-[1px] rounded-full transition-all duration-300"
-        style={{
-          backgroundColor: color,
-          height: active ? `${30 + Math.random() * 70}%` : '2px',
-          animation: active ? `wave ${0.4 + Math.random()}s ease-in-out infinite` : 'none',
-          animationDelay: `${i * 0.1}s`
-        }}
-      ></div>
-    ))}
-  </div>
-);
+import { getWebSocket } from '../services/websocket';
 
 const RealTimeMonitor: React.FC = () => {
   const [activeCalls, setActiveCalls] = useState<CallMetric[]>([]);
@@ -37,13 +21,33 @@ const RealTimeMonitor: React.FC = () => {
     };
 
     fetchActive();
-    const interval = setInterval(fetchActive, 3000); // Poll every 3 seconds for more real-time updates
-    return () => clearInterval(interval);
+
+    // Poll every 3 seconds as fallback
+    const interval = setInterval(fetchActive, 3000);
+
+    // Also listen to WebSocket for real-time updates
+    const ws = getWebSocket();
+
+    const handleCallUpdate = (data: any) => {
+      console.log('Call update received:', data);
+      fetchActive(); // Refresh when changes detected
+    };
+
+    ws.on('call_started', handleCallUpdate);
+    ws.on('call_updated', handleCallUpdate);
+    ws.on('call_ended', handleCallUpdate);
+
+    return () => {
+      clearInterval(interval);
+      ws.off('call_started', handleCallUpdate);
+      ws.off('call_updated', handleCallUpdate);
+      ws.off('call_ended', handleCallUpdate);
+    };
   }, []);
+
   const [monitoringId, setMonitoringId] = useState<string | null>(null);
   const [overridingId, setOverridingId] = useState<string | null>(null);
 
-  // Calculate live duration for active calls
   const getLiveDuration = (timestamp: string) => {
     const start = new Date(timestamp);
     const now = new Date();
@@ -54,98 +58,130 @@ const RealTimeMonitor: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4 animate-in fade-in duration-500 pb-20 lg:pb-0">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold font-display text-white tracking-tight">Live Ops</h2>
-        <div className="flex items-center gap-3">
-          <span className="text-[8px] text-slate-500 font-mono">
+    <div>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', paddingTop: '24px' }}>
+        <div>
+          <h2 style={{ fontSize: '24px', fontWeight: '700', color: '#0F172A', marginBottom: '4px', fontFamily: 'Inter, system-ui, sans-serif' }}>
+            Live Queue
+          </h2>
+          <p style={{ fontSize: '14px', color: '#94A3B8' }}>
+            Monitor active calls in real-time
+          </p>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <span style={{ fontSize: '12px', color: '#94A3B8' }}>
             Updated: {lastUpdated.toLocaleTimeString()}
           </span>
-          <div className="flex items-center gap-2 px-3 py-1 bg-slate-900/50 border border-white/5 rounded-lg">
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '8px',
+            padding: '6px 14px', backgroundColor: '#F1F5F9', borderRadius: '8px',
+          }}>
+            <span style={{
+              width: '8px', height: '8px', borderRadius: '50%',
+              backgroundColor: '#10B981', display: 'inline-block',
+            }} />
+            <span style={{ fontSize: '13px', fontWeight: '600', color: '#0F172A' }}>
+              {activeCalls.length} Active
             </span>
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">{activeCalls.length} Active</span>
+          </div>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '8px',
+            padding: '6px 14px', backgroundColor: '#FFF7ED', borderRadius: '8px',
+          }}>
+            <span style={{ fontSize: '13px', fontWeight: '600', color: COLORS.primary }}>
+              WebSocket Connected
+            </span>
           </div>
         </div>
       </div>
 
       {activeCalls.length === 0 ? (
-        <div className="glass p-12 rounded-2xl border border-white/5 flex flex-col items-center justify-center text-center space-y-4">
-          <div className="w-16 h-16 bg-slate-900/80 rounded-2xl flex items-center justify-center border border-white/5">
-            <svg className="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div style={{
+          backgroundColor: '#FFFFFF', borderRadius: '16px', padding: '64px',
+          textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+        }}>
+          <div style={{
+            width: '64px', height: '64px', borderRadius: '16px', backgroundColor: '#F1F5F9',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px',
+          }}>
+            <svg width="28" height="28" fill="none" stroke="#94A3B8" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
             </svg>
           </div>
-          <div>
-            <h3 className="text-sm font-bold text-white mb-1">No Active Calls</h3>
-            <p className="text-[10px] text-slate-500 max-w-xs">
-              When calls come in, they will appear here in real-time. The monitor refreshes every 3 seconds.
-            </p>
-          </div>
-          <div className="flex items-center gap-2 text-[8px] text-slate-600">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-50"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
-            </span>
-            <span className="uppercase tracking-widest font-bold">Listening for incoming calls...</span>
+          <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#0F172A', marginBottom: '8px' }}>No Active Calls</h3>
+          <p style={{ fontSize: '14px', color: '#94A3B8', maxWidth: '320px', margin: '0 auto 16px' }}>
+            When calls come in, they will appear here in real-time. The monitor refreshes every 3 seconds.
+          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
+            <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#06B6D4', display: 'inline-block', animation: 'pulse 2s infinite' }} />
+            <span style={{ fontSize: '12px', fontWeight: '600', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Listening for incoming calls...</span>
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px' }}>
           {activeCalls.map((call) => {
             const isMonitoring = monitoringId === call.id;
             const isOverriding = overridingId === call.id;
 
             return (
-              <div
-                key={call.id}
-                className={`glass p-4 rounded-2xl border-t-2 transition-all duration-300 relative overflow-hidden ${isMonitoring ? 'border-t-emerald-500' : isOverriding ? 'border-t-rose-500' : 'border-t-cyan-500'
-                  }`}
-              >
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center border transition-colors ${isOverriding ? 'bg-rose-500/20 border-rose-500/30 text-rose-400' : 'bg-slate-950 border-white/5 text-slate-500'
-                      }`}>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
+              <div key={call.id} style={{
+                backgroundColor: '#FFFFFF', borderRadius: '16px', padding: '20px',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                borderTop: `3px solid ${isOverriding ? '#EF4444' : isMonitoring ? '#10B981' : '#06B6D4'}`,
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{
+                      width: '36px', height: '36px', borderRadius: '10px',
+                      backgroundColor: '#F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <svg width="18" height="18" fill="none" stroke="#64748B" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                      </svg>
                     </div>
                     <div>
-                      <h4 className="text-xs font-bold text-white leading-tight">{call.caller}</h4>
-                      <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">{isOverriding ? 'Override' : call.language || 'en-US'}</span>
+                      <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#0F172A' }}>{call.caller}</h4>
+                      <span style={{ fontSize: '11px', fontWeight: '500', color: '#94A3B8', textTransform: 'uppercase' }}>{call.language || 'en-US'}</span>
                     </div>
                   </div>
-                  <div className="text-[10px] font-mono text-violet-400 font-bold">{getLiveDuration(call.timestamp)}</div>
+                  <span style={{ fontSize: '13px', fontWeight: '600', color: COLORS.primary, fontFamily: 'monospace' }}>{getLiveDuration(call.timestamp)}</span>
                 </div>
 
-                <div className="bg-black/20 rounded-xl p-3 border border-white/5 mb-3">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[8px] font-bold text-slate-600 uppercase tracking-widest">Neural Stream</span>
-                    <AudioVisualizer active={true} color={isOverriding ? COLORS.danger : isMonitoring ? COLORS.success : COLORS.secondary} />
-                  </div>
-                  <p className="text-[10px] text-slate-400 italic line-clamp-1">
+                <div style={{
+                  backgroundColor: '#F8FAFC', borderRadius: '10px', padding: '12px', marginBottom: '16px',
+                  border: '1px solid #E2E8F0',
+                }}>
+                  <span style={{ fontSize: '11px', fontWeight: '600', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '4px' }}>Live Stream</span>
+                  <p style={{ fontSize: '13px', color: '#64748B', fontStyle: 'italic' }}>
                     {call.transcript && call.transcript.length > 0
                       ? `"${call.transcript[call.transcript.length - 1].text}"`
                       : "Listening for input..."}
                   </p>
                 </div>
 
-                <div className="flex gap-2">
+                <div style={{ display: 'flex', gap: '8px' }}>
                   <button
                     onClick={() => setMonitoringId(isMonitoring ? null : call.id)}
-                    className={`flex-1 group py-2 rounded-lg border transition-all ${isMonitoring ? 'bg-emerald-500 border-emerald-400' : 'bg-white/5 border-white/5 hover:bg-white/10'
-                      }`}
+                    style={{
+                      flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid #E2E8F0',
+                      backgroundColor: isMonitoring ? '#10B981' : '#FFFFFF',
+                      color: isMonitoring ? '#FFFFFF' : '#64748B',
+                      fontWeight: '600', fontSize: '12px', cursor: 'pointer', transition: 'all 0.2s',
+                    }}
                   >
-                    <div className={`text-[9px] font-black uppercase tracking-tighter ${isMonitoring ? 'text-white' : 'text-slate-300'}`}>Monitor</div>
-                    <div className={`text-[7px] font-bold uppercase opacity-60 ${isMonitoring ? 'text-white' : 'text-slate-500'}`}>Listen Only</div>
+                    Monitor
                   </button>
                   <button
                     onClick={() => setOverridingId(isOverriding ? null : call.id)}
-                    className={`flex-1 group py-2 rounded-lg border transition-all ${isOverriding ? 'bg-rose-600 border-rose-500' : 'bg-white/5 border-white/5 hover:bg-white/10'
-                      }`}
+                    style={{
+                      flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid #E2E8F0',
+                      backgroundColor: isOverriding ? '#EF4444' : '#FFFFFF',
+                      color: isOverriding ? '#FFFFFF' : '#64748B',
+                      fontWeight: '600', fontSize: '12px', cursor: 'pointer', transition: 'all 0.2s',
+                    }}
                   >
-                    <div className={`text-[9px] font-black uppercase tracking-tighter ${isOverriding ? 'text-white' : 'text-slate-300'}`}>Control</div>
-                    <div className={`text-[7px] font-bold uppercase opacity-60 ${isOverriding ? 'text-white' : 'text-slate-500'}`}>Barge-In</div>
+                    Control
                   </button>
                 </div>
               </div>

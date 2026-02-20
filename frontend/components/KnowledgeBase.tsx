@@ -1,229 +1,200 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { COLORS } from '../constants';
-import { api } from '../services/api';
 
-interface KnowledgeDoc {
+const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15 MB in bytes
+
+interface KBDocument {
     id: string;
-    text: string;
-    metadata: {
-        source: string;
-        chunk: number;
-        type: string;
-    };
+    filename: string;
+    upload_date: string;
+    chunk_count: number;
+    file_size: number;
 }
 
 const KnowledgeBase: React.FC = () => {
-    const [docs, setDocs] = useState<KnowledgeDoc[]>([]);
-    const [loading, setLoading] = useState(false);
+    const [documents, setDocuments] = useState<KBDocument[]>([]);
     const [uploading, setUploading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [success, setSuccess] = useState<string | null>(null);
+    const [dragOver, setDragOver] = useState(false);
 
-    const fetchDocs = async () => {
-        setLoading(true);
+    const fetchDocuments = async () => {
         try {
-            const response = await fetch('http://localhost:8000/api/v1/admin/knowledge/list');
-            const data = await response.json();
-
-            // Handle both formats: direct array (admin.py) or wrapped object (knowledge_base.py)
-            if (data.documents && Array.isArray(data.documents)) {
-                // knowledge_base.py format: {success: true, documents: [...]}
-                // Convert file-based format to display format
-                const displayDocs = data.documents.flatMap((doc: any) =>
-                    doc.files.map((file: string, idx: number) => ({
-                        id: `${doc.doc_id}_${idx}`,
-                        text: `Document: ${file}`,
-                        metadata: {
-                            source: file,
-                            chunk: 0,
-                            type: 'uploaded_document',
-                            doc_id: doc.doc_id
-                        }
-                    }))
-                );
-                setDocs(displayDocs);
-            } else if (Array.isArray(data)) {
-                // admin.py format: direct array
-                setDocs(data);
-            } else {
-                console.error('Invalid knowledge data format:', data);
-                setDocs([]);
-            }
-        } catch (err) {
-            setError('Failed to load knowledge base');
-        } finally {
-            setLoading(false);
+            const res = await fetch('http://localhost:8000/api/v1/knowledge-base/list');
+            if (!res.ok) throw new Error('Failed to fetch documents');
+            const data = await res.json();
+            setDocuments(data.documents || []);
+        } catch (e) {
+            console.error('Error fetching documents:', e);
+            setDocuments([]);
         }
     };
 
-    useEffect(() => {
-        fetchDocs();
-    }, []);
+    React.useEffect(() => { fetchDocuments(); }, []);
 
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
+    const handleUpload = async (file: File) => {
+        // Check file size (15 MB limit)
+        if (file.size > MAX_FILE_SIZE) {
+            alert(`File size exceeds the limit. Maximum accepted file size is 15 MB.\n\nFile: ${file.name}\nSize: ${(file.size / (1024 * 1024)).toFixed(2)} MB`);
+            return;
+        }
 
         setUploading(true);
-        setError(null);
-        setSuccess(null);
-
-        const formData = new FormData();
-        formData.append('file', file);
-
         try {
-            const response = await fetch('http://localhost:8000/api/v1/admin/knowledge/upload', {
+            const formData = new FormData();
+            formData.append('file', file);
+            const res = await fetch('http://localhost:8000/api/v1/knowledge-base/upload', {
                 method: 'POST',
-                body: formData,
+                body: formData
             });
-
-            const data = await response.json();
-            
-            if (!response.ok || !data.success) {
-                throw new Error(data.error || data.detail || 'Upload failed');
+            if (!res.ok) {
+                const error = await res.json();
+                throw new Error(error.detail || 'Upload failed');
             }
-
-            // Show success message
-            setSuccess(`Successfully uploaded "${file.name}" with ${data.chunks_created} chunks`);
-            console.log('Upload successful:', data);
-            
-            // Clear success message after 5 seconds
-            setTimeout(() => setSuccess(null), 5000);
-            
-            // Refresh the document list
-            await fetchDocs();
-        } catch (err: any) {
-            console.error('Upload error:', err);
-            setError(err.message || 'Upload failed. Ensure backend is running.');
+            await fetchDocuments();
+        } catch (e: any) {
+            console.error('Error uploading document:', e);
+            alert(e.message || 'Failed to upload document. Please try again.');
         } finally {
             setUploading(false);
-            // Reset file input
-            e.target.value = '';
         }
     };
 
     const handleDelete = async (id: string) => {
         if (!confirm('Are you sure you want to delete this document?')) return;
-
         try {
-            // Extract doc_id from composite ID (format: "doc_id_idx")
-            const doc_id = id.includes('_') ? id.split('_').slice(0, -1).join('_') : id;
-
-            await fetch(`http://localhost:8000/api/v1/admin/knowledge/${doc_id}`, {
-                method: 'DELETE',
-            });
-
-            // Refresh the list after deletion
-            await fetchDocs();
-        } catch (err) {
-            setError('Failed to delete document');
+            const res = await fetch(`http://localhost:8000/api/v1/knowledge-base/${id}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error('Failed to delete document');
+            await fetchDocuments();
+        } catch (e) {
+            console.error('Error deleting document:', e);
+            alert('Failed to delete document. Please try again.');
         }
     };
 
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault(); setDragOver(false);
+        const file = e.dataTransfer.files[0];
+        if (file) handleUpload(file);
+    };
+
+    const formatSize = (bytes: number) => {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / 1048576).toFixed(1) + ' MB';
+    };
+
     return (
-        <div className="space-y-6 pb-20 animate-in fade-in duration-700">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h2 className="text-2xl font-bold font-display text-white tracking-tight">Knowledge</h2>
-                    <p className="text-[11px] text-slate-500 mt-1 uppercase font-bold tracking-widest">Neural Asset Repository</p>
-                </div>
-                <div className="flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/5 rounded-lg">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">{docs.length} Segments</span>
-                </div>
+        <div style={{ paddingTop: '24px' }}>
+            <div style={{ marginBottom: '32px' }}>
+                <h2 style={{ fontSize: '24px', fontWeight: '700', color: '#0F172A', marginBottom: '4px', fontFamily: 'Inter, system-ui, sans-serif' }}>
+                    Knowledge Base
+                </h2>
+                <p style={{ fontSize: '14px', color: '#94A3B8' }}>
+                    Upload documents for the AI assistant's RAG pipeline
+                </p>
             </div>
 
-            {/* Upload Zone */}
-            <div className="glass p-6 rounded-[2rem] border-dashed border-2 border-white/10 hover:border-violet-500/30 transition-all group relative overflow-hidden">
-                <input
-                    type="file"
-                    onChange={handleFileUpload}
-                    className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                    accept=".pdf,.txt,.docx"
-                />
-                <div className="flex flex-col items-center justify-center text-center space-y-4 py-4">
-                    <div className="w-14 h-14 rounded-2xl bg-violet-600/10 flex items-center justify-center border border-violet-500/20 group-hover:bg-violet-600/20 transition-all">
-                        {uploading ? (
-                            <div className="w-5 h-5 border-2 border-violet-500 border-t-transparent rounded-full animate-spin"></div>
-                        ) : (
-                            <svg className="w-6 h-6 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                            </svg>
-                        )}
+            {/* Upload Area */}
+            <div
+                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={handleDrop}
+                style={{
+                    backgroundColor: dragOver ? '#FFF7ED' : '#FFFFFF',
+                    border: `2px dashed ${dragOver ? COLORS.primary : '#E2E8F0'}`,
+                    borderRadius: '16px', padding: '48px', textAlign: 'center',
+                    marginBottom: '32px', transition: 'all 0.2s', cursor: 'pointer',
+                }}
+                onClick={() => {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = '.pdf,.txt,.docx';
+                    input.onchange = (e: any) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleUpload(file);
+                    };
+                    input.click();
+                }}
+            >
+                <div style={{
+                    width: '56px', height: '56px', borderRadius: '14px',
+                    backgroundColor: '#FFF7ED', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    margin: '0 auto 16px',
+                }}>
+                    <svg width="28" height="28" fill="none" stroke={COLORS.primary} viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                </div>
+                <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#0F172A', marginBottom: '4px' }}>
+                    {uploading ? 'Uploading...' : 'Drop files here or click to upload'}
+                </h3>
+                <p style={{ fontSize: '13px', color: '#94A3B8' }}>
+                    Supports PDF, TXT, DOCX
+                </p>
+            </div>
+
+            {/* Documents List */}
+            <div style={{
+                backgroundColor: '#FFFFFF', borderRadius: '16px',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.06)', overflow: 'hidden',
+            }}>
+                <div style={{ padding: '20px 24px', borderBottom: '1px solid #E2E8F0' }}>
+                    <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#0F172A' }}>
+                        Uploaded Documents ({documents.length})
+                    </h3>
+                </div>
+
+                {documents.length === 0 ? (
+                    <div style={{ padding: '48px', textAlign: 'center' }}>
+                        <p style={{ fontSize: '14px', color: '#94A3B8' }}>No documents uploaded yet.</p>
                     </div>
+                ) : (
                     <div>
-                        <p className="text-sm font-bold text-white">Upload Training Data</p>
-                        <p className="text-[10px] text-slate-500 mt-1 uppercase font-bold tracking-widest">PDF / TXT / DOCX (10MB Limit)</p>
-                    </div>
-                </div>
-            </div>
-
-            {error && (
-                <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-400 text-[10px] font-bold uppercase flex items-center gap-3">
-                    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    {error}
-                </div>
-            )}
-
-            {success && (
-                <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400 text-[10px] font-bold uppercase flex items-center gap-3 animate-in fade-in duration-300">
-                    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    {success}
-                </div>
-            )}
-
-            {/* Knowledge List (Card Style for Mobile) */}
-            <div className="space-y-4">
-                <div className="flex items-center justify-between px-2">
-                    <h3 className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">Context Registry</h3>
-                    <button onClick={fetchDocs} className="text-[9px] font-black text-violet-400 uppercase tracking-widest hover:text-white transition-colors">Refresh Nodes</button>
-                </div>
-
-                <div className="space-y-3">
-                    {loading ? (
-                        <div className="p-12 text-center">
-                            <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Indexing neural patterns...</span>
-                        </div>
-                    ) : docs.length === 0 ? (
-                        <div className="glass p-12 rounded-[2rem] border-white/5 text-center">
-                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest italic leading-loose">No knowledge indexed.<br />Upload data to initialize RAG.</p>
-                        </div>
-                    ) : (
-                        docs.map((doc) => (
-                            <div key={doc.id} className="glass p-5 rounded-2xl border-white/5 hover:border-white/10 transition-all group relative overflow-hidden">
-                                <div className="absolute top-0 right-0 w-24 h-24 bg-violet-600/5 blur-[40px] pointer-events-none"></div>
-
-                                <div className="flex items-start justify-between mb-3 relative z-10">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-xl bg-slate-950 border border-white/5 flex items-center justify-center">
-                                            {doc.metadata?.source?.endsWith('.pdf') ? (
-                                                <svg className="w-5 h-5 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
-                                            ) : (
-                                                <svg className="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                                            )}
-                                        </div>
-                                        <div>
-                                            <p className="text-[11px] font-bold text-white truncate max-w-[200px] mb-1">{doc.metadata?.source || 'Untitled'}</p>
-                                            <span className="px-2 py-0.5 rounded bg-violet-500/10 text-[8px] font-mono text-violet-400 border border-violet-500/20">Segment #{doc.metadata.chunk}</span>
+                        {documents.map((doc, idx) => (
+                            <div key={doc.id} style={{
+                                padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                borderBottom: idx < documents.length - 1 ? '1px solid #F1F5F9' : 'none',
+                                transition: 'background-color 0.2s',
+                            }}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#FAFAFA'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                            >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                                    <div style={{
+                                        width: '40px', height: '40px', borderRadius: '10px', backgroundColor: '#F1F5F9',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    }}>
+                                        <svg width="20" height="20" fill="none" stroke="#64748B" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p style={{ fontSize: '14px', fontWeight: '600', color: '#0F172A' }}>{doc.filename}</p>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
+                                            <span style={{ fontSize: '12px', color: '#94A3B8' }}>{formatSize(doc.file_size)}</span>
+                                            <span style={{ width: '3px', height: '3px', borderRadius: '50%', backgroundColor: '#CBD5E1', display: 'inline-block' }} />
+                                            <span style={{ fontSize: '12px', color: '#94A3B8' }}>{doc.chunk_count} chunks</span>
+                                            <span style={{ width: '3px', height: '3px', borderRadius: '50%', backgroundColor: '#CBD5E1', display: 'inline-block' }} />
+                                            <span style={{ fontSize: '12px', color: '#94A3B8' }}>{new Date(doc.upload_date).toLocaleDateString()}</span>
                                         </div>
                                     </div>
-                                    <button
-                                        onClick={() => handleDelete(doc.id)}
-                                        className="p-2 rounded-lg bg-rose-500/5 hover:bg-rose-500/20 text-rose-400 transition-all"
-                                    >
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                    </button>
                                 </div>
-                                <div className="bg-black/20 rounded-xl p-3 border border-white/5 relative z-10 transition-colors group-hover:border-white/10">
-                                    <p className="text-[10px] text-slate-400 line-clamp-3 italic leading-relaxed">
-                                        "{doc.text}"
-                                    </p>
-                                </div>
+                                <button
+                                    onClick={() => handleDelete(doc.id)}
+                                    style={{
+                                        padding: '8px 16px', backgroundColor: '#FEF2F2', border: '1px solid #FECACA',
+                                        borderRadius: '8px', color: '#EF4444', fontWeight: '600', fontSize: '12px',
+                                        cursor: 'pointer', transition: 'all 0.2s',
+                                    }}
+                                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#FEE2E2'; }}
+                                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#FEF2F2'; }}
+                                >
+                                    Delete
+                                </button>
                             </div>
-                        ))
-                    )}
-                </div>
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     );

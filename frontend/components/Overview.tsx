@@ -1,46 +1,32 @@
-
 import React from 'react';
 import KPICard from './KPICard';
 import { api } from '../services/api';
 import { COLORS } from '../constants';
 import {
   CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend, BarChart, Bar, XAxis
+  AreaChart, Area, XAxis, YAxis
 } from 'recharts';
 
 const Overview: React.FC = () => {
   const [businessStats, setBusinessStats] = React.useState<any[]>([
-    { label: 'Total Inbound', value: '0', change: 0, trend: 'up' },
-    { label: 'Answered Calls', value: '0', change: 0, trend: 'up' },
-    { label: 'Missed Calls', value: '0', change: 0, trend: 'down' },
+    { label: 'Total Calls', value: '0', change: 0, trend: 'up' },
+    { label: 'Total Contacts', value: '0', change: 0, trend: 'up' },
     { label: 'Avg Duration', value: '0s', change: 0, trend: 'up' },
   ]);
-  const [intentDistribution, setIntentDistribution] = React.useState<any[]>([]);
   const [hourWiseCalls, setHourWiseCalls] = React.useState<any[]>([]);
-  const [peakWindow, setPeakWindow] = React.useState<string>('N/A');
+  const [activePeriod, setActivePeriod] = React.useState('Hourly');
 
   React.useEffect(() => {
     const fetchData = async () => {
       try {
         const data = await api.getAnalytics();
-
-        // Transform for Business Stats
         const stats = [
-          { label: 'Total Inbound', value: data.total_calls.toLocaleString(), change: 0, trend: 'up' as const },
-          { label: 'Answered Calls', value: data.completed_calls.toLocaleString(), change: 0, trend: 'up' as const },
-          { label: 'Missed Calls', value: data.missed_calls.toLocaleString(), change: 0, trend: 'down' as const },
+          { label: 'Total Calls', value: data.total_calls.toLocaleString(), change: 0, trend: 'up' as const },
+          { label: 'Total Contacts', value: data.completed_calls.toLocaleString(), change: 0, trend: 'up' as const },
           { label: 'Avg Duration', value: `${Math.round(data.avg_duration)}s`, change: 0, trend: 'up' as const },
         ];
         setBusinessStats(stats);
-
-        // Transform for Intent Distribution
-        const intents = Object.entries(data.intent_distribution).map(([name, value]) => ({ name, value }));
-        setIntentDistribution(intents);
-
-        // Transform for Peak Window
         setHourWiseCalls(data.calls_by_hour);
-        setPeakWindow(data.peak_window || 'N/A');
-
       } catch (error) {
         console.error("Failed to load analytics", error);
       }
@@ -48,86 +34,161 @@ const Overview: React.FC = () => {
     fetchData();
   }, []);
 
-  const PIE_COLORS = [COLORS.deep, COLORS.secondary, COLORS.success, COLORS.warning, COLORS.danger];
-
   return (
-    <div className="space-y-6 pb-20 animate-in fade-in duration-700">
+    <div>
+      {/* Hero Section */}
+      <div style={{
+        textAlign: 'center',
+        padding: '48px 0 40px',
+      }}>
+        <h1 style={{
+          fontSize: '42px',
+          fontWeight: '700',
+          color: '#0F172A',
+          lineHeight: '1.25',
+          marginBottom: '16px',
+          fontFamily: 'Inter, system-ui, sans-serif',
+        }}>
+          Smarter calling, faster<br />
+          <span style={{
+            background: 'linear-gradient(90deg, #FF6B35, #EF4444)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+          }}>
+            execution, better results.
+          </span>
+        </h1>
+        <p style={{
+          fontSize: '16px',
+          color: '#64748B',
+          fontWeight: '400',
+          lineHeight: '1.6',
+        }}>
+          Track progress, collaborate seamlessly, and hit every deadline with confidence.
+        </p>
+      </div>
 
-      {/* SECTION 1: CALL-LEVEL METRICS */}
-      <section>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {businessStats.map((stat, idx) => (
-            <KPICard key={idx} {...stat} />
-          ))}
+      {/* KPI Cards */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(3, 1fr)',
+        gap: '24px',
+        marginBottom: '40px',
+      }}>
+        {businessStats.map((stat, idx) => (
+          <KPICard key={idx} {...stat} />
+        ))}
+      </div>
+
+      {/* Call Analytics Chart */}
+      <div style={{
+        backgroundColor: '#FFFFFF',
+        borderRadius: '16px',
+        padding: '28px',
+        boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.06)',
+      }}>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          marginBottom: '28px',
+        }}>
+          <div>
+            <h3 style={{
+              fontSize: '20px',
+              fontWeight: '700',
+              color: '#0F172A',
+              marginBottom: '4px',
+              fontFamily: 'Inter, system-ui, sans-serif',
+            }}>
+              Call Analytics
+            </h3>
+            <p style={{
+              fontSize: '14px',
+              color: '#94A3B8',
+              fontWeight: '400',
+            }}>
+              Track your call activity over time
+            </p>
+          </div>
+
+          {/* Time Period Tabs */}
+          <div style={{
+            display: 'flex',
+            gap: '4px',
+            backgroundColor: '#F1F5F9',
+            padding: '4px',
+            borderRadius: '10px',
+          }}>
+            {['Hourly', 'Daily', 'Weekly', 'Monthly'].map((period) => (
+              <button
+                key={period}
+                onClick={() => setActivePeriod(period)}
+                style={{
+                  padding: '8px 16px',
+                  border: 'none',
+                  background: activePeriod === period ? '#FFFFFF' : 'transparent',
+                  color: activePeriod === period ? '#0F172A' : '#64748B',
+                  fontWeight: activePeriod === period ? '600' : '400',
+                  fontSize: '13px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  boxShadow: activePeriod === period ? '0 1px 2px 0 rgba(0, 0, 0, 0.06)' : 'none',
+                  transition: 'all 0.2s',
+                  fontFamily: 'Inter, system-ui, sans-serif',
+                }}
+              >
+                {period}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <div className="mt-6">
-          <div className="glass p-5 rounded-2xl border-white/5 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 blur-[80px] pointer-events-none"></div>
-            <div className="flex justify-between items-center mb-5">
-              <h3 className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em]">Peak Window</h3>
-              <span className="text-sm font-semibold text-cyan-400">{peakWindow}</span>
-            </div>
-            <div className="h-[200px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={hourWiseCalls}>
-                  <XAxis dataKey="name" stroke="#475569" fontSize={9} axisLine={false} tickLine={false} />
-                  <Tooltip cursor={{ fill: 'rgba(255,255,255,0.02)' }} contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px', fontSize: '10px' }} />
-                  <Bar dataKey="value" fill={COLORS.secondary} radius={[4, 4, 0, 0]} barSize={10} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
+        {/* Area Chart */}
+        <div style={{ height: '280px', width: '100%' }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={hourWiseCalls}>
+              <defs>
+                <linearGradient id="colorCalls" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#FF6B35" stopOpacity={0.2} />
+                  <stop offset="95%" stopColor="#FF6B35" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
+              <XAxis
+                dataKey="name"
+                stroke="#94A3B8"
+                fontSize={12}
+                tickLine={false}
+                axisLine={{ stroke: '#E2E8F0' }}
+              />
+              <YAxis
+                stroke="#94A3B8"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid #E2E8F0',
+                  borderRadius: '8px',
+                  fontSize: '13px',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                  fontFamily: 'Inter, system-ui, sans-serif',
+                }}
+              />
+              <Area
+                type="monotone"
+                dataKey="value"
+                stroke="#FF6B35"
+                strokeWidth={2.5}
+                fill="url(#colorCalls)"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
         </div>
-      </section>
-
-      {/* COMPACT INTENT & HEALTH SECTION */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <section className="glass p-5 rounded-2xl border-white/5 relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-32 h-32 bg-violet-500/5 blur-[80px] pointer-events-none"></div>
-          <h2 className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-5">Intent Profile</h2>
-          <div className="h-[180px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={intentDistribution}
-                  cx="50%" cy="50%"
-                  innerRadius={50} outerRadius={70}
-                  paddingAngle={5} dataKey="value"
-                >
-                  {intentDistribution.map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px', fontSize: '9px' }} />
-                <Legend iconType="circle" wrapperStyle={{ fontSize: '9px', fontWeight: 'bold', textTransform: 'uppercase' }} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </section>
-
-        <section className="grid grid-cols-2 gap-3">
-          <div className="glass p-4 rounded-xl border-white/5 flex flex-col justify-center text-center relative overflow-hidden">
-            <div className="absolute inset-0 bg-violet-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest mb-1">Confidence</p>
-            <div className="text-xl font-bold font-display text-violet-400">92.4%</div>
-          </div>
-          <div className="glass p-4 rounded-xl border-white/5 flex flex-col justify-center text-center relative overflow-hidden">
-            <div className="absolute inset-0 bg-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest mb-1">Success</p>
-            <div className="text-xl font-bold font-display text-emerald-400">98.4%</div>
-          </div>
-          <div className="glass p-4 rounded-xl border-white/5 flex flex-col justify-center text-center relative overflow-hidden">
-            <div className="absolute inset-0 bg-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest mb-1">Latency</p>
-            <div className="text-xl font-bold font-display text-amber-500">342ms</div>
-          </div>
-          <div className="glass p-4 rounded-xl border-white/5 flex flex-col justify-center text-center relative overflow-hidden">
-            <div className="absolute inset-0 bg-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest mb-1">Growth</p>
-            <div className="text-xl font-bold font-display text-cyan-400">+12%</div>
-          </div>
-        </section>
       </div>
     </div>
   );

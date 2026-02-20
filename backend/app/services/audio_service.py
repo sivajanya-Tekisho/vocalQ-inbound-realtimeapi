@@ -29,7 +29,7 @@ class AudioService:
             client = get_openai_client()
             response = await client.embeddings.create(
                 input=text,
-                model="text-embedding-3-small"
+                model=settings.EMBEDDING_MODEL
             )
             return response.data[0].embedding
         except Exception as e:

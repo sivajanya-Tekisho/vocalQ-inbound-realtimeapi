@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     PROJECT_NAME: str = "vocalQ"
     API_V1_STR: str = "/api/v1"
-    BACKEND_CORS_ORIGINS: list = ["http://localhost:5173", "http://localhost:3000"]
+    BACKEND_CORS_ORIGINS: list = ["http://localhost:5173", "http://localhost:3000", "http://localhost:5175"]
 
     # Supabase
     SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
@@ -20,6 +20,11 @@ class Settings(BaseSettings):
     # Qdrant
     QDRANT_URL: str = os.getenv("QDRANT_URL", "")
     QDRANT_API_KEY: str = os.getenv("QDRANT_API_KEY", "")
+
+    # OpenAI Models
+    REALTIME_MODEL: str = os.getenv("REALTIME_MODEL", "gpt-4o-mini-realtime-preview-2024-12-17")
+    CHAT_MODEL: str = os.getenv("CHAT_MODEL", "gpt-4o-mini")
+    EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
 
     model_config = {
         "case_sensitive": True,

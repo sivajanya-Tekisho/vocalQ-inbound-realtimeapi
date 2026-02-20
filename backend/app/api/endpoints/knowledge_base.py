@@ -11,9 +11,10 @@ from fastapi.responses import JSONResponse
 from typing import Optional
 
 from app.services.document_ingestion_service import DocumentIngestionService
+from app.core.supabase_client import supabase
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/admin/knowledge", tags=["knowledge-base"])
+router = APIRouter(prefix="/knowledge-base", tags=["knowledge-base"])
 
 # Initialize service
 doc_ingestion = DocumentIngestionService()
@@ -26,22 +27,7 @@ async def upload_document(
 ):
     """
     Upload a document to the knowledge base.
-    
-    Supported formats: PDF, TXT, DOCX
-    
-    The document will be automatically:
-    - Parsed
-    - Chunked (with overlap)
-    - Embedded using OpenAI embeddings
-    - Stored in Qdrant vector database
-    
-    Args:
-        file: Document file to upload
-        category: Optional category for the document
-        description: Optional description of the document
-        
-    Returns:
-        Ingestion results
+    Also tracks the upload in the knowledge_base_documents Supabase table.
     """
     if not file.filename:
         raise HTTPException(status_code=400, detail="No file provided")
@@ -56,10 +42,21 @@ async def upload_document(
             detail=f"Unsupported file format. Supported: {', '.join(allowed_extensions)}"
         )
     
+    temp_path = None
     # Save uploaded file to temp location
     try:
         with tempfile.NamedTemporaryFile(delete=False, suffix=file_ext) as temp_file:
             content = await file.read()
+            
+            # Check file size (15 MB limit)
+            file_size = len(content)
+            file_size_mb = file_size / (1024 * 1024)
+            if file_size_mb > 15:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"File size exceeds the limit. Maximum accepted file size is 15 MB. Your file: {file_size_mb:.2f} MB"
+                )
+            
             temp_file.write(content)
             temp_path = temp_file.name
         
@@ -77,15 +74,35 @@ async def upload_document(
             metadata=metadata
         )
         
+        # Track upload in Supabase knowledge_base_documents table
+        if result.get("success"):
+            try:
+                doc_id = result.get("doc_id", "")
+                supabase.table("knowledge_base_documents").insert({
+                    "doc_id": doc_id,
+                    "filename": file.filename,
+                    "file_size": file_size,
+                    "file_type": file_ext.lstrip("."),
+                    "uploaded_by": "system",  # Will be updated when auth is implemented
+                    "chunk_count": result.get("chunks", 0),
+                    "status": "ready",
+                    "metadata": metadata
+                }).execute()
+                logger.info(f"Tracked upload in Supabase: {file.filename} ({doc_id})")
+            except Exception as db_err:
+                logger.warning(f"Failed to track upload in Supabase: {db_err}")
+        
         return JSONResponse(content=result, status_code=200 if result["success"] else 400)
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error uploading document: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error uploading document: {str(e)}")
     
     finally:
         # Clean up temp file
-        if os.path.exists(temp_path):
+        if temp_path and os.path.exists(temp_path):
             try:
                 os.remove(temp_path)
             except:
@@ -100,7 +117,38 @@ async def list_documents():
         List of documents with their metadata
     """
     try:
-        documents = doc_ingestion.list_documents()
+        raw_documents = doc_ingestion.list_documents()
+        
+        # Transform to frontend-expected format
+        documents = []
+        for doc in raw_documents:
+            doc_id = doc.get("doc_id", "unknown")
+            doc_dir = doc_ingestion.knowledge_base_dir / doc_id
+            
+            # Get file info
+            files = doc.get("files", [])
+            filename = files[0] if files else "Unknown Document"
+            
+            # Get file size
+            file_size = 0
+            upload_date = None
+            if doc_dir.exists():
+                for file_path in doc_dir.glob("*"):
+                    if file_path.is_file():
+                        import os
+                        from datetime import datetime
+                        file_size = file_path.stat().st_size
+                        upload_date = datetime.fromtimestamp(file_path.stat().st_mtime).isoformat()
+                        break
+            
+            documents.append({
+                "id": doc_id,
+                "filename": filename,
+                "upload_date": upload_date or "Unknown",
+                "chunk_count": doc.get("file_count", 0),
+                "file_size": file_size
+            })
+        
         return JSONResponse(
             content={
                 "success": True,
@@ -124,15 +172,19 @@ async def list_documents():
 async def delete_document(doc_id: str):
     """
     Delete a document and all its chunks from the knowledge base.
-    
-    Args:
-        doc_id: Document ID to delete
-        
-    Returns:
-        Deletion result
+    Also removes the record from the knowledge_base_documents table.
     """
     try:
         result = await doc_ingestion.delete_document(doc_id)
+        
+        # Also remove from Supabase tracking table
+        if result.get("success"):
+            try:
+                supabase.table("knowledge_base_documents").delete().eq("doc_id", doc_id).execute()
+                logger.info(f"Removed {doc_id} from knowledge_base_documents table")
+            except Exception as db_err:
+                logger.warning(f"Failed to remove from Supabase: {db_err}")
+        
         status_code = 200 if result["success"] else 400
         return JSONResponse(content=result, status_code=status_code)
     except Exception as e:

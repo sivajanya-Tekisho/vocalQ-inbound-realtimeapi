@@ -1,0 +1,1386 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VocalQ Inbound — Frontend Documentation</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0e1a;
+            --surface: #111827;
+            --surface-2: #1a2234;
+            --border: #1e293b;
+            --text: #e2e8f0;
+            --text-muted: #94a3b8;
+            --primary: #8b5cf6;
+            --primary-light: #a78bfa;
+            --cyan: #06b6d4;
+            --emerald: #10b981;
+            --rose: #f43f5e;
+            --amber: #f59e0b;
+            --indigo: #6366f1;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .doc-header {
+            text-align: center;
+            padding: 3rem 0 2rem;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 3rem;
+        }
+
+        .doc-header h1 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            background: linear-gradient(135deg, var(--cyan), var(--emerald));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .doc-header .subtitle {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
+        .doc-header .badge {
+            display: inline-block;
+            margin-top: 1rem;
+            padding: 0.3rem 1rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 9999px;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            font-weight: 700;
+            color: var(--cyan);
+        }
+
+        /* Sections */
+        .section {
+            margin-bottom: 3rem;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            color: #fff;
+            margin-bottom: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        h2 .icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+        }
+
+        h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--primary-light);
+            margin: 1.5rem 0 0.8rem;
+        }
+
+        h4 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--cyan);
+            margin: 1rem 0 0.5rem;
+        }
+
+        p {
+            margin-bottom: 0.8rem;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .card-accent {
+            border-left: 3px solid var(--cyan);
+        }
+
+        /* Code */
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82rem;
+            background: var(--surface-2);
+            padding: 0.15rem 0.45rem;
+            border-radius: 4px;
+            color: var(--cyan);
+        }
+
+        pre {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.2rem;
+            overflow-x: auto;
+            margin: 0.8rem 0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            line-height: 1.8;
+            color: var(--text-muted);
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            font-size: 0.85rem;
+        }
+
+        th {
+            text-align: left;
+            padding: 0.8rem 1rem;
+            background: var(--surface-2);
+            color: var(--primary-light);
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            letter-spacing: 0.1em;
+            border-bottom: 2px solid var(--border);
+        }
+
+        td {
+            padding: 0.7rem 1rem;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-muted);
+        }
+
+        tr:hover td {
+            background: var(--surface);
+        }
+
+        /* File tag */
+        .file-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            padding: 0.2rem 0.7rem;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--amber);
+        }
+
+        /* TOC */
+        .toc {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem 2rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .toc h3 {
+            margin-top: 0;
+            color: #fff;
+        }
+
+        .toc ol {
+            padding-left: 1.2rem;
+        }
+
+        .toc li {
+            margin: 0.4rem 0;
+        }
+
+        .toc a {
+            color: var(--primary-light);
+            text-decoration: none;
+            font-size: 0.88rem;
+            font-weight: 500;
+        }
+
+        .toc a:hover {
+            text-decoration: underline;
+        }
+
+        /* Flow */
+        .flow-step {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.2rem;
+        }
+
+        .flow-number {
+            min-width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--cyan);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 0.8rem;
+            flex-shrink: 0;
+        }
+
+        .flow-content h4 {
+            margin-top: 0.2rem;
+        }
+
+        hr {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 2rem 0;
+        }
+
+        .tech-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 0.8rem;
+            margin: 1rem 0;
+        }
+
+        .tech-item {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 0.8rem;
+            text-align: center;
+            font-size: 0.82rem;
+            font-weight: 600;
+        }
+
+        .tech-item span {
+            display: block;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            font-weight: 400;
+            margin-top: 0.2rem;
+        }
+
+        /* Color swatch */
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 0.8rem;
+            margin: 1rem 0;
+        }
+
+        .color-swatch {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .swatch-circle {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .swatch-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .swatch-value {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Component card */
+        .comp-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.2rem;
+            border-top: 2px solid var(--primary);
+        }
+
+        .comp-card h4 {
+            margin-top: 0;
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .comp-card .file-ref {
+            display: inline-block;
+            margin-bottom: 0.8rem;
+        }
+
+        ul.feature-list {
+            padding-left: 1.2rem;
+            color: var(--text-muted);
+            font-size: 0.88rem;
+        }
+
+        ul.feature-list li {
+            margin: 0.3rem 0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <!-- HEADER -->
+        <div class="doc-header">
+            <h1>VocalQ Inbound — Frontend</h1>
+            <p class="subtitle">Complete step-by-step documentation of the dashboard UI, components, and data flow</p>
+            <span class="badge">React + TypeScript + Tailwind CSS + Recharts + Vite</span>
+        </div>
+
+        <!-- TABLE OF CONTENTS -->
+        <div class="toc">
+            <h3>📋 Table of Contents</h3>
+            <ol>
+                <li><a href="#overview">Frontend Overview</a></li>
+                <li><a href="#tech">Technology Stack</a></li>
+                <li><a href="#structure">Folder Structure</a></li>
+                <li><a href="#config">Build &amp; Dev Configuration</a></li>
+                <li><a href="#design">Design System &amp; Constants</a></li>
+                <li><a href="#types">TypeScript Type Definitions</a></li>
+                <li><a href="#api">API Service Layer</a></li>
+                <li><a href="#app">App.tsx — Main Application</a></li>
+                <li><a href="#components">Components (Deep Dive)</a></li>
+                <li><a href="#dataflow">Data Flow Diagrams</a></li>
+                <li><a href="#views">User-Facing Views</a></li>
+            </ol>
+        </div>
+
+        <!-- 1. OVERVIEW -->
+        <div class="section" id="overview">
+            <h2><span class="icon" style="background:#06b6d420;color:var(--cyan)">🖥️</span> 1. Frontend Overview</h2>
+            <div class="card card-accent">
+                <p>The VocalQ frontend is a <strong>React + TypeScript</strong> single-page application that serves as
+                    the admin/operator dashboard for the AI voice assistant. It provides:</p>
+                <ul class="feature-list" style="margin-top:0.5rem;">
+                    <li><strong>Overview Dashboard</strong> — KPI cards, peak window charts, intent distribution</li>
+                    <li><strong>Live Monitor</strong> — Real-time active call tracking with audio visualizers</li>
+                    <li><strong>Call Logs</strong> — Searchable, filterable call records with chat-bubble transcript
+                        viewer</li>
+                    <li><strong>Knowledge Base</strong> — Upload, list, and delete RAG documents</li>
+                    <li><strong>Settings</strong> — Manage the AI greeting message</li>
+                </ul>
+                <p style="margin-top:0.8rem;">The UI uses a <strong>dark glassmorphism</strong> design language with a
+                    mobile-first bottom navigation bar, optimized for both desktop and mobile viewports.</p>
+            </div>
+        </div>
+
+        <!-- 2. TECH STACK -->
+        <div class="section" id="tech">
+            <h2><span class="icon" style="background:#8b5cf620;color:var(--primary)">⚡</span> 2. Technology Stack</h2>
+            <div class="tech-grid">
+                <div class="tech-item">React 18 <span>UI framework</span></div>
+                <div class="tech-item">TypeScript <span>Type safety</span></div>
+                <div class="tech-item">Tailwind CSS <span>Utility-first styling</span></div>
+                <div class="tech-item">Vite <span>Dev server + bundler</span></div>
+                <div class="tech-item">Recharts <span>Charts & graphs</span></div>
+                <div class="tech-item">Fetch API <span>HTTP requests</span></div>
+            </div>
+        </div>
+
+        <!-- 3. FOLDER STRUCTURE -->
+        <div class="section" id="structure">
+            <h2><span class="icon" style="background:#10b98120;color:var(--emerald)">📁</span> 3. Folder Structure</h2>
+            <pre>frontend/
+├── App.tsx                    # Main application (routing, state, layout)
+├── types.ts                   # TypeScript interfaces and type aliases
+├── constants.tsx              # Colors palette + SVG icon components
+├── vite.config.ts             # Vite build configuration
+├── services/
+│   └── api.ts                 # API client (fetch wrapper for backend)
+├── components/
+│   ├── Sidebar.tsx            # Bottom navigation bar
+│   ├── Overview.tsx           # Dashboard overview with charts
+│   ├── RealTimeMonitor.tsx    # Live active calls monitor
+│   ├── Transcripts.tsx        # Call logs & transcript viewer
+│   ├── KnowledgeBase.tsx      # Knowledge base management
+│   └── KPICard.tsx            # Reusable KPI metric card
+└── docs/
+    └── frontend_documentation.html  # This file</pre>
+        </div>
+
+        <!-- 4. CONFIG -->
+        <div class="section" id="config">
+            <h2><span class="icon" style="background:#f59e0b20;color:var(--amber)">⚙️</span> 4. Build &amp; Dev
+                Configuration</h2>
+
+            <h3>Vite Config <span class="file-tag">vite.config.ts</span></h3>
+            <div class="card">
+                <p>The Vite development server and build process are configured as follows:</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Setting</th>
+                            <th>Value</th>
+                            <th>Purpose</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>plugins</code></td>
+                            <td>react()</td>
+                            <td>React Fast Refresh + JSX support</td>
+                        </tr>
+                        <tr>
+                            <td><code>server.host</code></td>
+                            <td><code>true</code></td>
+                            <td>Network-accessible dev server (0.0.0.0)</td>
+                        </tr>
+                        <tr>
+                            <td><code>server.port</code></td>
+                            <td><code>5173</code></td>
+                            <td>Default Vite port (or configured to 5175)</td>
+                        </tr>
+                        <tr>
+                            <td><code>resolve.alias</code></td>
+                            <td><code>@</code> → <code>./src</code></td>
+                            <td>Path alias for cleaner imports</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <h4>Start Command</h4>
+                <pre>cd frontend
+npm install
+npm run dev
+# Opens on http://localhost:5173</pre>
+            </div>
+        </div>
+
+        <!-- 5. DESIGN SYSTEM -->
+        <div class="section" id="design">
+            <h2><span class="icon" style="background:#f43f5e20;color:var(--rose)">🎨</span> 5. Design System &amp;
+                Constants</h2>
+            <p>All colors and icons are centralized in <span class="file-tag">constants.tsx</span>.</p>
+
+            <h3>Color Palette</h3>
+            <div class="color-grid">
+                <div class="color-swatch">
+                    <div class="swatch-circle" style="background:#8b5cf6"></div>
+                    <div>
+                        <div class="swatch-label">Primary</div>
+                        <div class="swatch-value">#8b5cf6</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="swatch-circle" style="background:#06b6d4"></div>
+                    <div>
+                        <div class="swatch-label">Secondary</div>
+                        <div class="swatch-value">#06b6d4</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="swatch-circle" style="background:#10b981"></div>
+                    <div>
+                        <div class="swatch-label">Success</div>
+                        <div class="swatch-value">#10b981</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="swatch-circle" style="background:#f59e0b"></div>
+                    <div>
+                        <div class="swatch-label">Warning</div>
+                        <div class="swatch-value">#f59e0b</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="swatch-circle" style="background:#ef4444"></div>
+                    <div>
+                        <div class="swatch-label">Danger</div>
+                        <div class="swatch-value">#ef4444</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="swatch-circle" style="background:#64748b"></div>
+                    <div>
+                        <div class="swatch-label">Muted</div>
+                        <div class="swatch-value">#64748b</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="swatch-circle" style="background:#2563eb"></div>
+                    <div>
+                        <div class="swatch-label">Info</div>
+                        <div class="swatch-value">#2563eb</div>
+                    </div>
+                </div>
+                <div class="color-swatch">
+                    <div class="swatch-circle" style="background:#4f46e5"></div>
+                    <div>
+                        <div class="swatch-label">Deep</div>
+                        <div class="swatch-value">#4f46e5</div>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Icon Components</h3>
+            <p>SVG icon components are exported from <code>Icons</code> object:</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Icon Name</th>
+                        <th>Used In</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>Icons.Dashboard</code></td>
+                        <td>Sidebar → Home</td>
+                        <td>Grid layout icon</td>
+                    </tr>
+                    <tr>
+                        <td><code>Icons.Analytics</code></td>
+                        <td>Overview charts</td>
+                        <td>Chart/bar icon</td>
+                    </tr>
+                    <tr>
+                        <td><code>Icons.Live</code></td>
+                        <td>Sidebar → Live Monitor</td>
+                        <td>Broadcast/signal icon</td>
+                    </tr>
+                    <tr>
+                        <td><code>Icons.Transcripts</code></td>
+                        <td>Sidebar → Call Logs</td>
+                        <td>Document/text icon</td>
+                    </tr>
+                    <tr>
+                        <td><code>Icons.Settings</code></td>
+                        <td>Sidebar → Settings</td>
+                        <td>Gear/cog icon</td>
+                    </tr>
+                    <tr>
+                        <td><code>Icons.Knowledge</code></td>
+                        <td>Sidebar → Knowledge</td>
+                        <td>Book/brain icon</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 6. TYPES -->
+        <div class="section" id="types">
+            <h2><span class="icon" style="background:#6366f120;color:var(--indigo)">📐</span> 6. TypeScript Type
+                Definitions</h2>
+            <p>All shared types are defined in <span class="file-tag">types.ts</span>.</p>
+
+            <div class="card">
+                <h4>ViewState</h4>
+                <pre>type ViewState = 'overview' | 'realtime' | 'transcripts' | 'knowledge' | 'settings'</pre>
+                <p>Navigation state — determines which main view is currently displayed.</p>
+            </div>
+
+            <div class="card">
+                <h4>TranscriptPart</h4>
+                <pre>interface TranscriptPart {
+  speaker: 'ai' | 'user';
+  text: string;
+  timestamp: string;
+}</pre>
+                <p>Represents one message in a call transcript. Used in chat-bubble rendering.</p>
+            </div>
+
+            <div class="card">
+                <h4>CallMetric</h4>
+                <pre>interface CallMetric {
+  id: string;
+  caller: string;
+  timestamp: string;
+  duration: number;
+  status: string;
+  sentiment: string;
+  intent: string;
+  language: string;
+  summary: string;
+  transcript: TranscriptPart[];
+  token_usage: number;
+}</pre>
+                <p>Complete call record with all metadata. Used in Call Logs, Live Monitor, and Overview components.</p>
+            </div>
+
+            <div class="card">
+                <h4>BusinessMetric</h4>
+                <pre>interface BusinessMetric {
+  label: string;
+  value: string;
+  change: number;
+  trend: 'up' | 'down';
+}</pre>
+                <p>KPI card data structure. Used by the KPICard component and Overview dashboard.</p>
+            </div>
+
+            <div class="card">
+                <h4>ChartData &amp; AnalyticsData</h4>
+                <pre>interface ChartData {
+  name: string;
+  value: number;
+}
+
+interface AnalyticsData {
+  total_calls: number;
+  completed_calls: number;
+  missed_calls: number;
+  avg_duration: number;
+  intent_distribution: Record&lt;string, number&gt;;
+  calls_by_hour: ChartData[];
+  peak_window: string;
+}</pre>
+                <p>Analytics payload shape returned from <code>GET /api/v1/calls/analytics</code>.</p>
+            </div>
+        </div>
+
+        <!-- 7. API SERVICE -->
+        <div class="section" id="api">
+            <h2><span class="icon" style="background:#10b98120;color:var(--emerald)">🔌</span> 7. API Service Layer</h2>
+            <p>All API calls are centralized in <span class="file-tag">services/api.ts</span>.</p>
+
+            <div class="card" style="border-top: 2px solid var(--emerald);">
+                <h4>Base URL</h4>
+                <pre>const API_BASE = 'http://localhost:8000/api/v1'</pre>
+
+                <h4>Available Methods</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Function</th>
+                            <th>HTTP Request</th>
+                            <th>Returns</th>
+                            <th>Used By</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>api.getAnalytics()</code></td>
+                            <td><code>GET /calls/analytics</code></td>
+                            <td><code>AnalyticsData</code></td>
+                            <td>Overview.tsx</td>
+                        </tr>
+                        <tr>
+                            <td><code>api.getCalls()</code></td>
+                            <td><code>GET /calls/?limit=200</code></td>
+                            <td><code>CallMetric[]</code></td>
+                            <td>Transcripts.tsx</td>
+                        </tr>
+                        <tr>
+                            <td><code>api.getActiveCalls()</code></td>
+                            <td><code>GET /calls/active</code></td>
+                            <td><code>CallMetric[]</code></td>
+                            <td>RealTimeMonitor.tsx</td>
+                        </tr>
+                        <tr>
+                            <td><code>api.getCallDetails(id)</code></td>
+                            <td><code>GET /calls/{id}</code></td>
+                            <td><code>CallMetric</code></td>
+                            <td>Transcripts.tsx (detail pane)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p style="margin-top:0.8rem;">Note: The Knowledge Base component makes <strong>direct fetch()
+                        calls</strong> to <code>http://localhost:8000/api/v1/admin/knowledge/*</code> instead of using
+                    the centralized API service.</p>
+            </div>
+        </div>
+
+        <!-- 8. APP.TSX -->
+        <div class="section" id="app">
+            <h2><span class="icon" style="background:#8b5cf620;color:var(--primary)">🏠</span> 8. App.tsx — Main
+                Application</h2>
+            <p><span class="file-tag">App.tsx</span> is the root component that orchestrates the entire UI.</p>
+
+            <div class="card" style="border-top: 2px solid var(--primary);">
+                <h4>State Management</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>State Variable</th>
+                            <th>Type</th>
+                            <th>Purpose</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>activeView</code></td>
+                            <td><code>ViewState</code></td>
+                            <td>Controls which main view is displayed (overview, realtime, transcripts, knowledge,
+                                settings)</td>
+                        </tr>
+                        <tr>
+                            <td><code>settingsTab</code></td>
+                            <td><code>string</code></td>
+                            <td>Active sub-tab within Settings view (greeting, model, etc.)</td>
+                        </tr>
+                        <tr>
+                            <td><code>greeting</code></td>
+                            <td><code>string</code></td>
+                            <td>Current AI greeting message (fetched from backend)</td>
+                        </tr>
+                        <tr>
+                            <td><code>isSaving</code></td>
+                            <td><code>boolean</code></td>
+                            <td>Loading state for greeting save operation</td>
+                        </tr>
+                        <tr>
+                            <td><code>saveStatus</code></td>
+                            <td><code>string</code></td>
+                            <td>Success/error feedback message</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h4>Layout Architecture</h4>
+                <pre>┌─────────────────────────────────────────┐
+│              Header / Title              │
+│          (VocalQ + subtitle)             │
+├─────────────────────────────────────────┤
+│                                         │
+│            Main Content Area            │
+│    (renders active view component)      │
+│                                         │
+│    Overview | RealTimeMonitor |         │
+│    Transcripts | KnowledgeBase |        │
+│    Settings (inline)                    │
+│                                         │
+├─────────────────────────────────────────┤
+│         Bottom Navigation Bar           │
+│    (Sidebar.tsx - fixed bottom)         │
+│   Home  Live  Logs  Knowledge  Settings │
+└─────────────────────────────────────────┘</pre>
+
+                <h4>View Routing Logic</h4>
+                <p>No React Router is used — views are conditionally rendered based on <code>activeView</code>:</p>
+                <pre>activeView === 'overview'    → &lt;Overview /&gt;
+activeView === 'realtime'    → &lt;RealTimeMonitor /&gt;
+activeView === 'transcripts' → &lt;Transcripts /&gt;
+activeView === 'knowledge'   → &lt;KnowledgeBase /&gt;
+activeView === 'settings'    → Inline settings UI (greeting editor)</pre>
+
+                <h4>Greeting Feature (Settings View)</h4>
+                <ol style="color:var(--text-muted);font-size:0.88rem;padding-left:1.2rem; margin-top:0.5rem;">
+                    <li>On mount: fetches current greeting via <code>GET /admin/settings/greeting</code></li>
+                    <li>User edits the greeting text in a <code>&lt;textarea&gt;</code></li>
+                    <li>On save: sends <code>POST /admin/settings/greeting</code> with the new message body</li>
+                    <li>Displays success/error feedback with auto-clear timeout</li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- 9. COMPONENTS DEEP DIVE -->
+        <div class="section" id="components">
+            <h2><span class="icon" style="background:#06b6d420;color:var(--cyan)">🧩</span> 9. Components (Deep Dive)
+            </h2>
+
+            <!-- Sidebar -->
+            <div class="comp-card" style="border-top-color: var(--primary);">
+                <h4>Navigation (Sidebar) <span class="file-tag file-ref">Sidebar.tsx</span></h4>
+                <p><strong>Type:</strong> Presentational component</p>
+                <p><strong>Role:</strong> Fixed bottom navigation bar visible on all views. Mobile-first design with a
+                    max-width of 480px, centered on screen.</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Props</th>
+                            <th>Type</th>
+                            <th>Purpose</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>activeView</code></td>
+                            <td><code>ViewState</code></td>
+                            <td>Highlights the active tab</td>
+                        </tr>
+                        <tr>
+                            <td><code>onViewChange</code></td>
+                            <td><code>(view: ViewState) => void</code></td>
+                            <td>Callback to switch views</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <h4>Menu Items</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Label</th>
+                            <th>Icon</th>
+                            <th>Accent Color</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>overview</code></td>
+                            <td>Home</td>
+                            <td>Dashboard</td>
+                            <td>Primary (#8b5cf6)</td>
+                        </tr>
+                        <tr>
+                            <td><code>realtime</code></td>
+                            <td>Live Monitor</td>
+                            <td>Live</td>
+                            <td>Secondary (#06b6d4)</td>
+                        </tr>
+                        <tr>
+                            <td><code>transcripts</code></td>
+                            <td>Call Logs</td>
+                            <td>Transcripts</td>
+                            <td>Warning (#f59e0b)</td>
+                        </tr>
+                        <tr>
+                            <td><code>knowledge</code></td>
+                            <td>Knowledge</td>
+                            <td>Knowledge</td>
+                            <td>Info (#2563eb)</td>
+                        </tr>
+                        <tr>
+                            <td><code>settings</code></td>
+                            <td>Settings</td>
+                            <td>Settings</td>
+                            <td>Muted (#64748b)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p>Active tab shows a colored accent line at top and full-opacity icon + label.</p>
+            </div>
+
+            <!-- Overview -->
+            <div class="comp-card" style="border-top-color: var(--emerald);">
+                <h4>Overview <span class="file-tag file-ref">Overview.tsx</span></h4>
+                <p><strong>Type:</strong> Container component (fetches own data)</p>
+                <p><strong>Role:</strong> Main dashboard — displays KPI cards, peak window bar chart, intent pie chart,
+                    and health metrics.</p>
+
+                <h4>Data Fetching</h4>
+                <div class="flow-step">
+                    <div class="flow-number">1</div>
+                    <div class="flow-content">
+                        <p><code>useEffect</code> on mount calls <code>api.getAnalytics()</code></p>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-number">2</div>
+                    <div class="flow-content">
+                        <p>Transforms response into 4 business stats, intent distribution array, hourly call data, and
+                            peak window string</p>
+                    </div>
+                </div>
+
+                <h4>UI Sections</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Section</th>
+                            <th>Library</th>
+                            <th>Data Source</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>KPI Cards (4x grid)</td>
+                            <td>KPICard component</td>
+                            <td>total_calls, completed, missed, avg_duration</td>
+                        </tr>
+                        <tr>
+                            <td>Peak Window Bar Chart</td>
+                            <td>Recharts BarChart</td>
+                            <td>calls_by_hour array, peak_window label</td>
+                        </tr>
+                        <tr>
+                            <td>Intent Distribution Pie</td>
+                            <td>Recharts PieChart (donut)</td>
+                            <td>intent_distribution object → array</td>
+                        </tr>
+                        <tr>
+                            <td>Health Metrics (4x grid)</td>
+                            <td>Static display</td>
+                            <td>Confidence, Success, Latency, Growth (hardcoded)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- KPICard -->
+            <div class="comp-card" style="border-top-color: var(--amber);">
+                <h4>KPICard <span class="file-tag file-ref">KPICard.tsx</span></h4>
+                <p><strong>Type:</strong> Presentational component</p>
+                <p><strong>Role:</strong> Reusable metric card displaying a label, value, and trend indicator.</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Props (BusinessMetric)</th>
+                            <th>Rendered As</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>label</code></td>
+                            <td>Small uppercase label text</td>
+                        </tr>
+                        <tr>
+                            <td><code>value</code></td>
+                            <td>Large bold value (e.g., "142", "35s")</td>
+                        </tr>
+                        <tr>
+                            <td><code>change</code></td>
+                            <td>Percentage badge (e.g., "↑ 12%")</td>
+                        </tr>
+                        <tr>
+                            <td><code>trend</code></td>
+                            <td>Green (up) or red (down) badge color</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p>Uses semantic accent colors based on label keywords: "Inbound" → primary, "Answered" → success,
+                    "Missed" → danger, "Duration" → secondary.</p>
+            </div>
+
+            <!-- RealTimeMonitor -->
+            <div class="comp-card" style="border-top-color: var(--cyan);">
+                <h4>RealTimeMonitor <span class="file-tag file-ref">RealTimeMonitor.tsx</span></h4>
+                <p><strong>Type:</strong> Container component with polling</p>
+                <p><strong>Role:</strong> Displays currently active calls in real-time with live duration counters and
+                    audio visualizers.</p>
+
+                <h4>Polling Mechanism</h4>
+                <div class="flow-step">
+                    <div class="flow-number">1</div>
+                    <div class="flow-content">
+                        <p>On mount: calls <code>api.getActiveCalls()</code></p>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-number">2</div>
+                    <div class="flow-content">
+                        <p>Sets up <code>setInterval</code> → polls every <strong>3 seconds</strong></p>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-number">3</div>
+                    <div class="flow-content">
+                        <p>Cleanup: clears interval on unmount</p>
+                    </div>
+                </div>
+
+                <h4>Empty State</h4>
+                <p>When no active calls: shows a phone icon, "No Active Calls" message, and a pulsing cyan dot with
+                    "Listening for incoming calls..."</p>
+
+                <h4>Active Call Card Features</h4>
+                <ul class="feature-list">
+                    <li><strong>Caller identity</strong> — phone number and detected language</li>
+                    <li><strong>Live duration</strong> — computed from call start timestamp (MM:SS format)</li>
+                    <li><strong>Audio Visualizer</strong> — 6-bar animated waveform (CSS keyframe animation)</li>
+                    <li><strong>Latest transcript</strong> — shows last transcript line</li>
+                    <li><strong>Monitor button</strong> — toggles listen-only mode (green highlight)</li>
+                    <li><strong>Control button</strong> — toggles barge-in override mode (red highlight)</li>
+                </ul>
+
+                <h4>AudioVisualizer Sub-Component</h4>
+                <p>Inline component rendering 6 animated bars. Each bar has randomized height and animation delay for a
+                    natural waveform effect. Color changes based on monitoring/override state.</p>
+            </div>
+
+            <!-- Transcripts -->
+            <div class="comp-card" style="border-top-color: var(--amber);">
+                <h4>Transcripts <span class="file-tag file-ref">Transcripts.tsx</span></h4>
+                <p><strong>Type:</strong> Container component with master-detail layout</p>
+                <p><strong>Role:</strong> Full call log browser with search, date filters, and a chat-bubble transcript
+                    viewer.</p>
+
+                <h4>State</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Variable</th>
+                            <th>Type</th>
+                            <th>Purpose</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>calls</code></td>
+                            <td><code>CallMetric[]</code></td>
+                            <td>All fetched call records</td>
+                        </tr>
+                        <tr>
+                            <td><code>searchTerm</code></td>
+                            <td><code>string</code></td>
+                            <td>Filter by caller number or intent</td>
+                        </tr>
+                        <tr>
+                            <td><code>selectedCall</code></td>
+                            <td><code>CallMetric | null</code></td>
+                            <td>Currently selected call for detail pane</td>
+                        </tr>
+                        <tr>
+                            <td><code>dateFilter</code></td>
+                            <td><code>string</code></td>
+                            <td>all / today / yesterday / week / month / custom</td>
+                        </tr>
+                        <tr>
+                            <td><code>customDate</code></td>
+                            <td><code>string</code></td>
+                            <td>Selected date when dateFilter is "custom"</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h4>Data Loading</h4>
+                <div class="flow-step">
+                    <div class="flow-number">1</div>
+                    <div class="flow-content">
+                        <p>On mount: <code>api.getCalls()</code> → sorts by timestamp descending → sets
+                            <code>calls</code></p>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-number">2</div>
+                    <div class="flow-content">
+                        <p>On call select: if transcript is missing, auto-fetches <code>api.getCallDetails(id)</code>
+                            for full data</p>
+                    </div>
+                </div>
+
+                <h4>Date Filtering</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Filter Value</th>
+                            <th>Logic</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>all</code></td>
+                            <td>No date filter</td>
+                        </tr>
+                        <tr>
+                            <td><code>today</code></td>
+                            <td>Matches current date (midnight comparison)</td>
+                        </tr>
+                        <tr>
+                            <td><code>yesterday</code></td>
+                            <td>Matches previous day</td>
+                        </tr>
+                        <tr>
+                            <td><code>week</code></td>
+                            <td>Within last 7 days</td>
+                        </tr>
+                        <tr>
+                            <td><code>month</code></td>
+                            <td>Within last 30 days</td>
+                        </tr>
+                        <tr>
+                            <td><code>custom</code></td>
+                            <td>Shows a date picker, matches selected date</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h4>Layout: Master-Detail</h4>
+                <pre>┌──────────────┬──────────────────────────────┐
+│  Call List   │     Conversation Viewer       │
+│  (1/3 width) │     (2/3 width)               │
+│              │                               │
+│  Search bar  │  ┌── Header ──────────────┐   │
+│  Date filter │  │  Caller / Time / Intent │   │
+│  Result count│  ├────────────────────────┤   │
+│              │  │  AI Summary Block      │   │
+│  ┌─ Card ─┐  │  ├────────────────────────┤   │
+│  │ Caller  │  │  │  Chat Bubbles:        │   │
+│  │ Meta    │  │  │  AI (left) / User     │   │
+│  │ Summary │  │  │  (right) with         │   │
+│  └────────┘  │  │  timestamps            │   │
+│              │  ├────────────────────────┤   │
+│              │  │  Footer: Export + CRM  │   │
+└──────────────┴──────────────────────────────┘</pre>
+
+                <h4>ConversationView Sub-Component</h4>
+                <ul class="feature-list">
+                    <li><strong>Header:</strong> Back button, caller number, timestamp (IST), intent badge, sentiment
+                        badge, token count</li>
+                    <li><strong>Summary Block:</strong> Gradient violet card showing AI-generated call summary</li>
+                    <li><strong>Chat Bubbles:</strong> AI messages left-aligned (dark), user messages right-aligned
+                        (violet), each with speaker label and timestamp</li>
+                    <li><strong>Footer Actions:</strong> "Export Transcript" and "Sync to CRM" buttons (UI only, not yet
+                        implemented)</li>
+                </ul>
+                <p>On mobile: the list pane hides when a call is selected; the detail pane becomes full-screen with a
+                    back button.</p>
+            </div>
+
+            <!-- KnowledgeBase -->
+            <div class="comp-card" style="border-top-color: var(--indigo);">
+                <h4>KnowledgeBase <span class="file-tag file-ref">KnowledgeBase.tsx</span></h4>
+                <p><strong>Type:</strong> Container component (manages own state + API calls)</p>
+                <p><strong>Role:</strong> Upload, view, and delete RAG training documents.</p>
+
+                <h4>State</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Variable</th>
+                            <th>Purpose</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>docs</code></td>
+                            <td>Array of knowledge documents</td>
+                        </tr>
+                        <tr>
+                            <td><code>loading</code></td>
+                            <td>Document list loading state</td>
+                        </tr>
+                        <tr>
+                            <td><code>uploading</code></td>
+                            <td>File upload in-progress state</td>
+                        </tr>
+                        <tr>
+                            <td><code>error</code></td>
+                            <td>Error message (red banner)</td>
+                        </tr>
+                        <tr>
+                            <td><code>success</code></td>
+                            <td>Success message (green banner, auto-clears 5s)</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h4>Document Upload Flow</h4>
+                <div class="flow-step">
+                    <div class="flow-number">1</div>
+                    <div class="flow-content">
+                        <p>User selects a file (.pdf, .txt, .docx) via the drop zone input</p>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-number">2</div>
+                    <div class="flow-content">
+                        <p><code>handleFileUpload()</code> creates a FormData and POSTs to
+                            <code>/admin/knowledge/upload</code></p>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-number">3</div>
+                    <div class="flow-content">
+                        <p>On success: shows green banner ("Successfully uploaded X with Y chunks"), refreshes document
+                            list</p>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="flow-number">4</div>
+                    <div class="flow-content">
+                        <p>On error: shows red banner with error message</p>
+                    </div>
+                </div>
+
+                <h4>Document List</h4>
+                <p>Fetched from <code>GET /admin/knowledge/list</code>. Handles two response formats:</p>
+                <ul class="feature-list">
+                    <li><strong>Wrapped format:</strong> <code>{documents: [{doc_id, files: [...]}]}</code> — flattened
+                        to display format</li>
+                    <li><strong>Direct array format:</strong> Array of document objects used directly</li>
+                </ul>
+                <p>Each document card shows: file icon (PDF = rose, other = cyan), filename, segment number, preview
+                    text, and a delete button.</p>
+
+                <h4>Document Deletion</h4>
+                <p>Confirm dialog → extracts <code>doc_id</code> from composite ID →
+                    <code>DELETE /admin/knowledge/{doc_id}</code> → refreshes list.</p>
+            </div>
+        </div>
+
+        <!-- 10. DATA FLOW -->
+        <div class="section" id="dataflow">
+            <h2><span class="icon" style="background:#f43f5e20;color:var(--rose)">🔄</span> 10. Data Flow Diagrams</h2>
+
+            <h3>Overview Dashboard Data Flow</h3>
+            <div class="card">
+                <pre>App.tsx renders &lt;Overview /&gt;
+  → Overview useEffect
+    → api.getAnalytics()
+      → GET http://localhost:8000/api/v1/calls/analytics
+        → Backend: calls.py → get_analytics()
+          → Queries Supabase "calls" table
+          → Computes stats, hourly distribution, peak window
+        ← Returns AnalyticsData JSON
+    → Transforms data into:
+      ├── businessStats[] → KPICard components (4x grid)
+      ├── hourWiseCalls[] → Recharts BarChart
+      ├── peakWindow      → Text display
+      └── intentDistribution[] → Recharts PieChart</pre>
+            </div>
+
+            <h3>Live Monitor Data Flow</h3>
+            <div class="card">
+                <pre>App.tsx renders &lt;RealTimeMonitor /&gt;
+  → RealTimeMonitor useEffect (polls every 3s)
+    → api.getActiveCalls()
+      → GET /api/v1/calls/active
+        → Backend filters calls where call_status = "active"
+      ← Returns CallMetric[]
+    → For each active call:
+      ├── Renders call card with caller info
+      ├── Computes live duration from timestamp
+      ├── Shows AudioVisualizer (animated bars)
+      └── Shows latest transcript line</pre>
+            </div>
+
+            <h3>Call Logs &amp; Transcript Data Flow</h3>
+            <div class="card">
+                <pre>App.tsx renders &lt;Transcripts /&gt;
+  → Transcripts useEffect
+    → api.getCalls()
+      → GET /api/v1/calls/?limit=200
+        → Backend: queries Supabase + joins call_summaries
+      ← Returns CallMetric[] (sorted by timestamp)
+    → User clicks a call card
+      → If transcript missing:
+        → api.getCallDetails(call.id)
+          → GET /api/v1/calls/{call_id}
+          ← Returns full CallMetric with transcript[]
+      → Renders ConversationView:
+        ├── Summary (gradient violet card)
+        └── Chat bubbles (AI left / User right + timestamps)</pre>
+            </div>
+
+            <h3>Knowledge Base Data Flow</h3>
+            <div class="card">
+                <pre>App.tsx renders &lt;KnowledgeBase /&gt;
+  → KnowledgeBase useEffect
+    → fetchDocs()
+      → GET /api/v1/admin/knowledge/list
+      ← Returns document list (auto-detects format)
+    → User uploads file:
+      → POST /api/v1/admin/knowledge/upload (FormData)
+        → Backend: parse → chunk → embed → store in Qdrant
+      ← Returns {success, chunks_created}
+      → Refresh document list
+    → User deletes document:
+      → DELETE /api/v1/admin/knowledge/{doc_id}
+      → Refresh document list</pre>
+            </div>
+
+            <h3>Settings (Greeting) Data Flow</h3>
+            <div class="card">
+                <pre>App.tsx (settings view is inline)
+  → useEffect on mount:
+    → GET /api/v1/admin/settings/greeting
+    ← Returns {greeting: "Welcome to..."}
+    → Sets greeting state
+  → User edits textarea
+  → User clicks "Save Changes":
+    → POST /api/v1/admin/settings/greeting
+      → Body: {greeting: "updated text"}
+    ← Returns success/error
+    → Shows feedback toast</pre>
+            </div>
+        </div>
+
+        <!-- 11. VIEWS -->
+        <div class="section" id="views">
+            <h2><span class="icon" style="background:#f59e0b20;color:var(--amber)">👁️</span> 11. User-Facing Views</h2>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>View</th>
+                        <th>Nav Label</th>
+                        <th>Component</th>
+                        <th>Key Features</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Home</strong></td>
+                        <td>Home</td>
+                        <td>Overview.tsx</td>
+                        <td>4 KPI cards, peak window bar chart, intent pie chart, health metrics grid</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Live Monitor</strong></td>
+                        <td>Live Monitor</td>
+                        <td>RealTimeMonitor.tsx</td>
+                        <td>Active call cards with live duration, audio visualizer, monitor/control buttons, 3s polling
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Call Logs</strong></td>
+                        <td>Call Logs</td>
+                        <td>Transcripts.tsx</td>
+                        <td>Search + date filter, master-detail layout, chat-bubble transcript, AI summary, export/CRM
+                            actions</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Knowledge</strong></td>
+                        <td>Knowledge</td>
+                        <td>KnowledgeBase.tsx</td>
+                        <td>File upload (PDF/TXT/DOCX), document list with previews, delete, refresh, success/error
+                            banners</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Settings</strong></td>
+                        <td>Settings</td>
+                        <td>Inline in App.tsx</td>
+                        <td>Greeting message editor with textarea, save button, status feedback</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <hr>
+        <p style="text-align:center; color:var(--text-muted); font-size:0.8rem; padding: 1rem 0 2rem;">
+            VocalQ Inbound Frontend Documentation — Generated Feb 2026 — Tekisho
+        </p>
+
+    </div>
+</body>
+
+</html>

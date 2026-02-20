@@ -8,8 +8,8 @@ logger = logging.getLogger(__name__)
 
 class RealtimeService:
     def __init__(self):
-        # Use GPT-4o-mini Realtime Model (cheaper and faster)
-        self.url = "wss://api.openai.com/v1/realtime?model=gpt-4o-mini-realtime-preview-2024-12-17"
+        # Use Realtime Model from .env config
+        self.url = f"wss://api.openai.com/v1/realtime?model={settings.REALTIME_MODEL}"
         self.api_key = settings.OPENAI_API_KEY
         self.ws = None
         self.session_config = None
